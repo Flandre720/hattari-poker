@@ -1,0 +1,3088 @@
+:root {
+  --bg-primary: #0f0f1a;
+  --bg-secondary: rgba(22, 27, 52, 0.8);
+  --bg-card: #0f3460;
+  --bg-surface: #141425;
+  --bg-modal: rgba(0, 0, 0, 0.85);
+  --card-bg: #1a1f35;
+  --text-primary: #eaeaef;
+  --text-secondary: #c0c0d0;
+  --text-accent: #53d769;
+  --accent: #e94560;
+  --accent-hover: #ff6b81;
+  --accent-glow: rgba(233, 69, 96, 0.35);
+  --success: #34d399;
+  --success-glow: rgba(52, 211, 153, 0.3);
+  --warning: #fbbf24;
+  --danger: #ef4444;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-accent: rgba(233, 69, 96, 0.25);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.6);
+  --glass: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --radius: 14px;
+  --radius-sm: 10px;
+  --font-main: 'Inter', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+  --bg-overlay-opacity: 0.6;
+  --base-font-size: 16px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-main);
+  font-size: var(--base-font-size);
+  background: var(--bg-primary);
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(99, 59, 159, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(233, 69, 96, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 100%, rgba(15, 52, 96, 0.2) 0%, transparent 50%);
+  background-attachment: fixed;
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── ロビー画面背景（森） ──────────────── */
+.lobby-screen {
+  background-image: url('/images/forest_bg.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+.lobby-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 15, 26, 0.35);
+  z-index: 0;
+}
+
+.lobby-screen > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── タイトルロゴ画像 ──────────────── */
+.title-logo-img {
+  width: min(1200px, 95vw);
+  height: auto;
+  filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.6)) brightness(0.85);
+  margin-bottom: -0.5rem;
+  mix-blend-mode: screen;
+  border-radius: var(--radius);
+}
+
+/* ── 生き物デコレーション ───────────── */
+.creatures-decoration {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background-image: url('/images/creatures.png');
+  background-size: contain;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
+  filter: drop-shadow(0 0 12px rgba(0, 0, 0, 0.5));
+  mix-blend-mode: screen;
+}
+
+/* ── ゲームボード背景（切り株） ───────── */
+.game-board {
+  background-image: url('/images/stump_bg.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+.game-board::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 15, 26, var(--bg-overlay-opacity));
+  z-index: 0;
+}
+
+.game-board > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── 共通ボタン ──────────────────────── */
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-main);
+}
+
+.btn:hover { transform: translateY(-2px); }
+.btn:active { transform: translateY(0); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), #c9375a);
+  color: white;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--accent-hover), var(--accent));
+  box-shadow: 0 6px 24px var(--accent-glow);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, var(--success), #22b57a);
+  color: #0f0f1a;
+  box-shadow: 0 4px 16px var(--success-glow);
+}
+
+.btn-warning {
+  background: var(--warning);
+  color: #1a1a2e;
+}
+
+.btn-outline {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  backdrop-filter: blur(8px);
+}
+.btn-outline:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ── セットアップ画面 ────────────────────── */
+.setup-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+  gap: 2rem;
+}
+
+.setup-screen h1 {
+  font-size: 2.5rem;
+  text-align: center;
+  background: linear-gradient(135deg, var(--accent), #ff9a56);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.setup-screen h1 .emoji {
+  -webkit-text-fill-color: initial;
+  font-size: 2rem;
+}
+
+.setup-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(12px);
+  position: relative;
+  overflow: hidden;
+}
+
+.setup-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), #a78bfa, var(--success));
+}
+
+.setup-card h2 {
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.player-count-selector {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.player-count-btn {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.player-count-btn.active {
+  border-color: var(--accent);
+  background: rgba(233, 69, 96, 0.15);
+  color: var(--accent);
+}
+
+.player-name-input {
+  width: 100%;
+  padding: 10px 14px;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-family: var(--font-main);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.player-name-input:focus {
+  border-color: var(--accent);
+}
+
+/* ── ゲームボード ─────────────────────── */
+.game-board {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 1rem;
+  gap: 1rem;
+}
+
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 1.2rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px);
+  position: relative;
+  overflow: hidden;
+}
+
+.game-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+
+.game-header .turn-info {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.game-header .current-player {
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 1.3rem;
+}
+
+/* ── 対戦相手エリア ────────────────────── */
+.opponents-area {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.opponent-panel {
+  flex: 1;
+  min-width: 150px;
+  max-width: 250px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+  transition: all 0.3s;
+  backdrop-filter: blur(8px);
+  position: relative;
+  overflow: hidden;
+}
+
+.opponent-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.4), transparent);
+}
+
+.opponent-panel.eliminated {
+  opacity: 0.4;
+  filter: grayscale(1);
+}
+
+.opponent-panel.selectable {
+  cursor: pointer;
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(233, 69, 96, 0.3);
+}
+
+.opponent-panel.selectable:hover {
+  background: rgba(233, 69, 96, 0.1);
+  transform: translateY(-2px);
+}
+
+.opponent-name {
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.opponent-hand-count {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.opponent-table-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 0.5rem;
+}
+
+.mini-card {
+  width: 34px;
+  height: 44px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ── 中央エリア ──────────────────────── */
+.center-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  min-height: 200px;
+}
+
+.passing-card-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.declaration-text {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--warning);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+/* ── 手札エリア ──────────────────────── */
+.hand-area {
+  background: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  backdrop-filter: blur(8px);
+  position: relative;
+  overflow: hidden;
+}
+
+.hand-area::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+
+.hand-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hand-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* ── スキルパネル ─────────────────────── */
+.skill-panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 1rem 1.2rem;
+  backdrop-filter: blur(8px);
+  position: relative;
+  overflow: hidden;
+}
+
+.skill-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #f59e0b, transparent);
+}
+
+.sp-display {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #f59e0b;
+  margin-bottom: 0.5rem;
+}
+
+.sp-bar {
+  width: 100%;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  overflow: hidden;
+  margin-top: 0.3rem;
+}
+
+.sp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  border-radius: 5px;
+  transition: width 0.5s ease;
+}
+
+.skill-buttons {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.6rem;
+}
+
+.skill-btn {
+  font-size: 1rem !important;
+  padding: 10px 16px !important;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.skill-btn.attack {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.skill-btn.change {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.skill-btn.shield {
+  border-color: #a78bfa;
+  color: #a78bfa;
+}
+
+.skill-btn.heal {
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.skill-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── カードコンポーネント ───────────────────── */
+.card {
+  width: 80px;
+  height: 112px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.25s;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  transform-style: preserve-3d;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 100%);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  pointer-events: none;
+}
+
+.card:hover:not(.card-disabled) {
+  transform: translateY(-6px) perspective(400px) rotateX(5deg);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+}
+
+.card.selected {
+  border-color: var(--accent);
+  transform: translateY(-10px);
+  box-shadow: 0 12px 28px rgba(233, 69, 96, 0.4), 0 0 0 1px var(--accent);
+}
+
+.card-disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.card-emoji {
+  font-size: 2.4rem;
+}
+
+.card-name {
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.card-back {
+  background: linear-gradient(135deg, #1e1e3a, #2a2a50);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 2rem;
+  background-image:
+    linear-gradient(135deg, #1e1e3a, #2a2a50),
+    repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(255,255,255,0.02) 8px, rgba(255,255,255,0.02) 16px);
+}
+
+.card-large {
+  width: 100px;
+  height: 140px;
+}
+
+.card-large .card-emoji { font-size: 3.2rem; }
+.card-large .card-name { font-size: 0.75rem; }
+
+/* ── 宣言モーダル ─────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.3s ease;
+  backdrop-filter: blur(16px);
+  position: relative;
+  overflow: hidden;
+}
+
+.modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), #a78bfa);
+}
+
+.modal h2 {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.creature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.creature-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-main);
+}
+
+.creature-btn:hover {
+  border-color: var(--accent);
+  background: rgba(233, 69, 96, 0.1);
+}
+
+.creature-btn .emoji { font-size: 1.5rem; }
+.creature-btn .name { font-size: 0.8rem; }
+
+/* ── プレイヤー切り替え画面 ──────────────────── */
+.switching-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 2rem;
+  text-align: center;
+  padding: 2rem;
+  background-image: url('/images/stump_bg.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+.switching-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 15, 26, calc(var(--bg-overlay-opacity) + 0.05));
+  z-index: 0;
+}
+
+.switching-screen > * {
+  position: relative;
+  z-index: 1;
+}
+
+.switching-screen h2 {
+  font-size: 2rem;
+  color: var(--accent);
+}
+
+.switching-screen p {
+  color: #e0e0e0;
+  font-size: 1.1rem;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* ── リザルト表示 ────────────────────── */
+.reveal-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  text-align: center;
+}
+
+.reveal-result .result-text {
+  font-size: 1.3rem;
+  font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+.reveal-result .honest { color: #4ade80; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8); }
+.reveal-result .liar { color: #fb7185; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8); }
+
+.reveal-result p {
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+.reveal-result strong {
+  color: #ffffff;
+}
+
+/* ── ゲームオーバー画面 ──────────────────── */
+.gameover-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 2rem;
+  padding: 2rem;
+  text-align: center;
+  background-image: url('/images/stump_bg.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+.gameover-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 15, 26, calc(var(--bg-overlay-opacity) + 0.05));
+  z-index: 0;
+}
+
+.gameover-screen > * {
+  position: relative;
+  z-index: 1;
+}
+
+.gameover-screen h1 {
+  font-size: 3rem;
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gameover-screen .winner-name {
+  font-size: 2rem;
+  color: var(--text-accent);
+  font-weight: 700;
+}
+
+.player-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 400px;
+}
+
+.player-result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.player-result-row.winner {
+  border-color: var(--success);
+  background: rgba(83, 215, 105, 0.1);
+}
+
+.player-result-row.eliminated {
+  opacity: 0.5;
+}
+
+/* ── テーブルカード表示 ──────────────────── */
+.table-cards-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+/* ── アニメーション ──────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.pulse { animation: pulse 1.5s ease infinite; }
+
+/* ── ロビー画面 ──────────────────────── */
+.lobby-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+  gap: 1.5rem;
+}
+
+.lobby-screen h1 {
+  font-size: 2.5rem;
+  text-align: center;
+  background: linear-gradient(135deg, var(--accent), #ff9a56);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.lobby-screen h1 .emoji {
+  -webkit-text-fill-color: initial;
+  font-size: 2rem;
+}
+
+.lobby-screen .subtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  letter-spacing: 0.15em;
+}
+
+.lobby-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: var(--shadow);
+}
+
+.lobby-btn {
+  width: 100%;
+  font-size: 1.2rem;
+  padding: 16px;
+  margin-bottom: 0.75rem;
+}
+
+.lobby-btn:last-child {
+  margin-bottom: 0;
+}
+
+.input-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.room-id-display {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.room-id-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.room-id-value {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  color: var(--accent);
+  font-family: 'Courier New', monospace;
+}
+
+.btn-copy {
+  margin-left: auto;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+
+.player-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.player-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.player-item.is-me {
+  border-color: var(--accent);
+  background: rgba(233, 69, 96, 0.08);
+}
+
+.you-badge {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+}
+
+.waiting-text {
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 1rem;
+  animation: pulse 2s ease infinite;
+}
+
+.lobby-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.lobby-actions .btn {
+  width: 100%;
+  font-size: 1.1rem;
+  padding: 14px;
+}
+
+.error-text {
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+.room-id-input {
+  text-align: center;
+  font-size: 1.5rem !important;
+  letter-spacing: 0.3em;
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+}
+
+.lobby-card h2 {
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* タイマー点滅アニメーション */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ── アニメーション ──────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cardDeal {
+  from { opacity: 0; transform: scale(0.8) rotate(-5deg); }
+  to { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(233, 69, 96, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(233, 69, 96, 0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes bounceIn {
+  0% { opacity: 0; transform: scale(0.3); }
+  50% { transform: scale(1.05); }
+  70% { transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* カードの出現アニメーション */
+.card {
+  animation: cardDeal 0.3s ease backwards;
+}
+
+.hand-cards .card:nth-child(1) { animation-delay: 0.0s; }
+.hand-cards .card:nth-child(2) { animation-delay: 0.05s; }
+.hand-cards .card:nth-child(3) { animation-delay: 0.1s; }
+.hand-cards .card:nth-child(4) { animation-delay: 0.15s; }
+.hand-cards .card:nth-child(5) { animation-delay: 0.2s; }
+.hand-cards .card:nth-child(6) { animation-delay: 0.25s; }
+.hand-cards .card:nth-child(7) { animation-delay: 0.3s; }
+.hand-cards .card:nth-child(8) { animation-delay: 0.35s; }
+
+/* 手番プレイヤーのパルスアニメーション */
+.opponent-panel.selectable {
+  animation: pulse 2s infinite;
+}
+
+/* 中央エリアのフェードイン */
+.center-area > * {
+  animation: fadeIn 0.4s ease;
+}
+
+/* 結果画面のバウンスイン */
+.reveal-result .card-large {
+  animation: bounceIn 0.5s ease;
+}
+
+/* チャレンジボタンのスライドアップ */
+.action-buttons {
+  animation: slideUp 0.3s ease;
+}
+
+/* 宣言テキストのシマーエフェクト */
+.declaration-text {
+  background: linear-gradient(90deg, var(--warning), #ffca3a, var(--warning));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+}
+
+/* カードの裏面改善 */
+.card-back {
+  background: linear-gradient(135deg, #2a2a5a, #1a1a3a, #2a2a5a);
+  border: 2px solid rgba(100, 100, 200, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.card-back::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(100, 100, 200, 0.2);
+  border-radius: 4px;
+}
+
+/* ゲームヘッダーの改善 */
+.game-header {
+  background: linear-gradient(135deg, var(--bg-secondary), rgba(15, 52, 96, 0.5));
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(100, 100, 200, 0.15);
+}
+
+/* 対戦相手パネルの改善 */
+.opponent-panel {
+  background: linear-gradient(135deg, var(--bg-secondary), rgba(15, 52, 96, 0.3));
+  border: 1px solid rgba(100, 100, 200, 0.15);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.opponent-panel:not(.eliminated):not(.selectable):hover {
+  border-color: rgba(100, 100, 200, 0.3);
+}
+
+/* 手札エリアの改善 */
+.hand-area {
+  background: linear-gradient(135deg, var(--bg-secondary), rgba(15, 52, 96, 0.3));
+  border: 1px solid rgba(100, 100, 200, 0.15);
+  animation: slideUp 0.3s ease;
+}
+
+/* ボタンの寸法改善 */
+.btn-danger {
+  background: var(--danger);
+  color: white;
+}
+.btn-danger:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+/* ── レスポンシブ対応 ──────────────────────── */
+@media (max-width: 768px) {
+  .game-board {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+
+  .game-header {
+    padding: 0.4rem 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .game-header .current-player {
+    font-size: 0.9rem;
+  }
+
+  .game-header .turn-info {
+    font-size: 0.8rem;
+  }
+
+  .opponents-area {
+    gap: 0.5rem;
+  }
+
+  .opponent-panel {
+    min-width: 100px;
+    padding: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .opponent-name {
+    font-size: 0.85rem;
+    gap: 0.25rem;
+  }
+
+  .center-area {
+    min-height: 150px;
+    gap: 1rem;
+  }
+
+  .card {
+    width: 56px;
+    height: 80px;
+  }
+
+  .card-emoji {
+    font-size: 1.4rem;
+  }
+
+  .card-name {
+    font-size: 0.45rem;
+  }
+
+  .card-large {
+    width: 80px;
+    height: 112px;
+  }
+
+  .card-large .card-emoji { font-size: 2rem; }
+  .card-large .card-name { font-size: 0.6rem; }
+
+  .hand-area {
+    padding: 0.75rem;
+  }
+
+  .hand-cards {
+    gap: 4px;
+  }
+
+  .action-buttons {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .action-buttons .btn {
+    padding: 10px 16px;
+    font-size: 0.85rem;
+  }
+
+  .declaration-text {
+    font-size: 1rem;
+  }
+
+  .creature-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+  }
+
+  .creature-btn {
+    padding: 8px 4px;
+    gap: 4px;
+  }
+
+  .creature-btn .emoji { font-size: 1.2rem; }
+  .creature-btn .name { font-size: 0.65rem; }
+
+  .modal {
+    padding: 1.25rem;
+    width: 95%;
+  }
+
+  .mini-card {
+    width: 22px;
+    height: 28px;
+    font-size: 0.65rem;
+  }
+
+  /* ロビー画面 */
+  .setup-screen {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .setup-screen h1 {
+    font-size: 1.5rem;
+  }
+
+  .setup-card {
+    padding: 1.25rem;
+  }
+
+  /* ゲームオーバー画面 */
+  .gameover-screen h1 {
+    font-size: 2rem;
+  }
+
+  .gameover-screen .winner-name {
+    font-size: 1.4rem;
+  }
+}
+
+/* 超小型画面 */
+@media (max-width: 400px) {
+  .card {
+    width: 48px;
+    height: 68px;
+  }
+
+  .card-emoji { font-size: 1.2rem; }
+  .card-name { font-size: 0.4rem; }
+
+  .opponent-panel {
+    min-width: 80px;
+  }
+
+  .action-buttons .btn {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+}
+
+/* ── 通知トースト ──────────────────────── */
+.toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.toast {
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  animation: slideDown 0.3s ease, fadeOut 0.5s ease 2.5s forwards;
+  font-size: 0.9rem;
+  max-width: 300px;
+}
+
+.toast-info { border-left: 3px solid var(--accent); }
+.toast-success { border-left: 3px solid var(--success); }
+.toast-warning { border-left: 3px solid var(--warning); }
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; pointer-events: none; }
+}
+
+/* ── 接続状態インジケーター ──────────────────────── */
+.connection-status {
+  position: fixed;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  z-index: 100;
+  animation: fadeIn 0.3s ease;
+}
+
+.connection-status.connected {
+  background: rgba(83, 215, 105, 0.15);
+  color: var(--success);
+  border: 1px solid rgba(83, 215, 105, 0.3);
+}
+
+.connection-status.disconnected {
+  background: rgba(233, 69, 96, 0.15);
+  color: var(--danger);
+  border: 1px solid rgba(233, 69, 96, 0.3);
+  animation: pulse 2s infinite;
+}
+
+/* ── チャットボックス ──────────────────────── */
+.chat-box {
+  position: fixed;
+  bottom: 2.5rem;
+  right: 0.5rem;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  width: 280px;
+}
+
+.chat-toggle {
+  align-self: flex-end;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: var(--font-main);
+  transition: all 0.2s;
+  position: relative;
+}
+
+.chat-toggle:hover {
+  border-color: var(--accent);
+  background: rgba(233, 69, 96, 0.1);
+}
+
+.chat-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--danger);
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.chat-body {
+  margin-top: 0.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  animation: slideUp 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  max-height: 300px;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-height: 120px;
+  max-height: 220px;
+}
+
+.chat-empty {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  text-align: center;
+  padding: 1rem;
+}
+
+.chat-msg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  padding: 0.25rem 0.4rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.chat-msg-mine {
+  background: rgba(233, 69, 96, 0.08);
+}
+
+.chat-msg-name {
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 0.7rem;
+}
+
+.chat-msg-text {
+  color: var(--text-primary);
+  word-break: break-all;
+  flex: 1;
+}
+
+.chat-msg-time {
+  color: var(--text-secondary);
+  font-size: 0.6rem;
+  align-self: flex-end;
+}
+
+.chat-input-area {
+  display: flex;
+  border-top: 1px solid var(--border);
+  padding: 0.4rem;
+  gap: 0.3rem;
+}
+
+.chat-input {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-family: var(--font-main);
+  outline: none;
+}
+
+.chat-input:focus {
+  border-color: var(--accent);
+}
+
+.chat-send-btn {
+  padding: 0.35rem 0.6rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-main);
+  transition: background 0.2s;
+}
+
+.chat-send-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.chat-send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* クイックメッセージバー */
+.quick-msg-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.35rem 0.4rem;
+  border-top: 1px solid var(--border);
+}
+
+.quick-msg-btn {
+  padding: 0.2rem 0.5rem;
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  border-radius: 12px;
+  background: rgba(167, 139, 250, 0.08);
+  color: #a78bfa;
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-family: var(--font-main);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.quick-msg-btn:hover {
+  background: rgba(167, 139, 250, 0.2);
+  border-color: #a78bfa;
+}
+
+.quick-msg-btn:active {
+  transform: scale(0.95);
+}
+
+/* スタンプパネル */
+.stamp-panel {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.2rem;
+  padding: 0.4rem;
+  border-top: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.15s ease;
+}
+
+.stamp-btn {
+  padding: 0.3rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.stamp-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.2);
+}
+
+.stamp-btn:active {
+  transform: scale(0.9);
+}
+
+/* スタンプトグルボタン */
+.stamp-toggle {
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.stamp-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.stamp-toggle.active {
+  background: rgba(167, 139, 250, 0.15);
+  border-color: #a78bfa;
+}
+
+/* スタンプ大表示（チャットメッセージ内） */
+.chat-msg-stamp {
+  background: transparent !important;
+  padding: 0.15rem 0.4rem !important;
+}
+
+.chat-msg-stamp-emoji {
+  font-size: 2.2rem;
+  display: block;
+  text-align: center;
+  padding: 0.2rem 0;
+  animation: stampBounce 0.3s ease;
+}
+
+@keyframes stampBounce {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@media (max-width: 768px) {
+  .chat-box {
+    width: 240px;
+  }
+  .chat-messages {
+    max-height: 160px;
+  }
+}
+
+/* ── 称号表示 ──────────────────────── */
+.titles-section {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.player-titles {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  flex-wrap: wrap;
+}
+
+.player-titles-name {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  min-width: 80px;
+}
+
+.title-badges {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.title-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.5rem;
+  background: linear-gradient(135deg, rgba(233, 69, 96, 0.12), rgba(255, 200, 87, 0.12));
+  border: 1px solid rgba(233, 69, 96, 0.2);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: default;
+  animation: bounceIn 0.3s ease;
+}
+
+/* ── イベントバナー ──────────────────────── */
+.event-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 1.2rem;
+  background: linear-gradient(135deg, rgba(255, 200, 87, 0.2), rgba(233, 69, 96, 0.15));
+  border: 1px solid rgba(255, 200, 87, 0.4);
+  border-radius: var(--radius-sm);
+  font-size: 1.05rem;
+  animation: slideDown 0.4s ease;
+  flex-wrap: wrap;
+}
+
+.event-emoji {
+  font-size: 1.8rem;
+}
+
+.event-name {
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 1.15rem;
+}
+
+.event-desc {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.leaked-cards {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.leaked-card {
+  padding: 0.2rem 0.5rem;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+/* イベント開始演出オーバーレイ */
+.event-announce-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+  transition: opacity 0.5s ease;
+}
+
+.event-announce-overlay.fading {
+  opacity: 0;
+}
+
+.event-announce-card {
+  background: linear-gradient(135deg, var(--bg-card), rgba(255, 200, 87, 0.15));
+  border: 2px solid rgba(255, 200, 87, 0.5);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem 3rem;
+  text-align: center;
+  animation: eventPopIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-width: 420px;
+}
+
+.event-announce-card .event-announce-emoji {
+  font-size: 4rem;
+  display: block;
+  margin-bottom: 0.8rem;
+}
+
+.event-announce-card .event-announce-name {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 0.6rem;
+}
+
+.event-announce-card .event-announce-desc {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+@keyframes eventPopIn {
+  0% { transform: scale(0.3); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.event-effects {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.effect-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  animation: slideDown 0.3s ease;
+}
+
+.effect-badge.barrier {
+  background: rgba(52, 211, 153, 0.15);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  color: #34d399;
+}
+
+.effect-badge.risk {
+  background: rgba(233, 69, 96, 0.15);
+  border: 1px solid rgba(233, 69, 96, 0.3);
+  color: var(--danger);
+}
+
+.effect-badge.lock {
+  background: rgba(255, 200, 87, 0.15);
+  border: 1px solid rgba(255, 200, 87, 0.3);
+  color: var(--accent);
+}
+
+.effect-badge.roulette {
+  background: rgba(96, 165, 250, 0.15);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  color: #60a5fa;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── スキルパネル ──────────────────────── */
+.skill-panel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  flex-wrap: wrap;
+}
+
+.sp-display {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+  min-width: 100px;
+}
+
+.sp-bar {
+  width: 60px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.sp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #f59e0b);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.skill-buttons {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.skill-btn {
+  padding: 0.25rem 0.5rem !important;
+  font-size: 0.75rem !important;
+  border-radius: 8px !important;
+  font-weight: 600;
+}
+
+.skill-btn.attack { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; }
+.skill-btn.change { background: rgba(96, 165, 250, 0.15); border: 1px solid rgba(96, 165, 250, 0.3); color: #60a5fa; }
+.skill-btn.shield { background: rgba(52, 211, 153, 0.15); border: 1px solid rgba(52, 211, 153, 0.3); color: #34d399; }
+.skill-btn.heal { background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); color: #a78bfa; }
+
+.skill-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── ターン切り替えトランジション ──────────── */
+.game-board {
+  animation: turnFadeIn 0.4s ease;
+}
+
+@keyframes turnFadeIn {
+  0% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+/* ── ルーレットサイコロ回転 ──────────── */
+.event-announce-card .dice-spin {
+  display: inline-block;
+  animation: diceRoll 1.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+@keyframes diceRoll {
+  0% { transform: rotate(0deg) scale(0.5); }
+  30% { transform: rotate(540deg) scale(1.2); }
+  60% { transform: rotate(900deg) scale(1); }
+  80% { transform: rotate(1050deg) scale(1.05); }
+  100% { transform: rotate(1080deg) scale(1); }
+}
+
+/* ── カード受け渡し演出 ──────────── */
+.card-flying {
+  animation: cardFlyUp 0.6s ease-out;
+}
+
+@keyframes cardFlyUp {
+  0% { transform: scale(1) translateY(0); opacity: 1; }
+  50% { transform: scale(0.8) translateY(-40px); opacity: 0.6; }
+  100% { transform: scale(0.5) translateY(-80px); opacity: 0; }
+}
+
+/* ── creature-btn ロック強化 ──────────── */
+.creature-btn:disabled {
+  opacity: 0.2 !important;
+  cursor: not-allowed !important;
+  border-color: transparent !important;
+  filter: grayscale(100%);
+  pointer-events: none;
+}
+
+.creature-btn:disabled .emoji {
+  filter: grayscale(100%);
+}
+
+/* ── イベント効果持続表示 ──────────── */
+.event-duration {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-left: auto;
+  opacity: 0.8;
+}
+
+/* ── 観戦モード ──────────────────────── */
+.spectator-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1.2rem;
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.15), rgba(167, 139, 250, 0.15));
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  border-radius: var(--radius-sm);
+  animation: slideDown 0.4s ease;
+}
+
+.spectator-banner .spectator-icon {
+  font-size: 1.4rem;
+}
+
+.spectator-banner span:nth-child(2) {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #60a5fa;
+}
+
+.spectator-banner .spectator-info {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-left: auto;
+}
+
+.spectator-mode .opponent-panel {
+  min-width: 220px;
+  padding: 1rem 1.2rem;
+}
+
+.spectator-mode .opponent-panel .mini-card {
+  width: 32px;
+  height: 42px;
+  font-size: 0.9rem;
+}
+
+.spectator-mode .center-area {
+  border: 1px dashed rgba(96, 165, 250, 0.2);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+/* ── リプレイモーダル ──────────────────────── */
+.replay-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.replay-modal {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  width: min(600px, 90vw);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.replay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.replay-header h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.replay-timeline {
+  overflow-y: auto;
+  padding: 1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.replay-turn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.replay-turn-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #60a5fa;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid rgba(96, 165, 250, 0.2);
+  margin-bottom: 0.2rem;
+}
+
+.replay-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  transition: background 0.15s;
+}
+
+.replay-entry:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.replay-emoji {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  width: 1.8rem;
+  text-align: center;
+}
+
+.replay-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.replay-player {
+  font-weight: 700;
+  color: #a78bfa;
+}
+
+.replay-detail {
+  color: var(--text-secondary);
+}
+
+.replay-action-game_start { border-left: 3px solid #60a5fa; }
+.replay-action-declare { border-left: 3px solid #fbbf24; }
+.replay-action-challenge { border-left: 3px solid #f87171; }
+.replay-action-result { border-left: 3px solid #34d399; }
+.replay-action-pass { border-left: 3px solid #818cf8; }
+.replay-action-eliminate { border-left: 3px solid #ef4444; }
+.replay-action-event { border-left: 3px solid #c084fc; }
+.replay-action-skill { border-left: 3px solid #fb923c; }
+.replay-action-game_over { border-left: 3px solid #fcd34d; }
+
+.replay-btn {
+  border-color: #a78bfa !important;
+  color: #a78bfa !important;
+}
+
+.replay-btn:hover {
+  background: rgba(167, 139, 250, 0.15) !important;
+}
+
+/* ── カードフリップアニメーション ─────────────────── */
+.flip-card-container {
+  perspective: 800px;
+  width: 100px;
+  height: 140px;
+}
+
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+  animation: flipCardFadeIn 0.05s ease forwards;
+}
+
+@keyframes flipCardFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.flip-card-container.flipped .flip-card-inner {
+  transform: rotateY(180deg);
+}
+
+.flip-card-front,
+.flip-card-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flip-card-front {
+  transform: rotateY(180deg);
+}
+
+.flip-card-back .card {
+  width: 100px;
+  height: 140px;
+}
+
+/* reveal-infoフェードイン */
+.reveal-info {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.5s ease;
+}
+
+.reveal-info.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── カード移動アニメーション ─────────────────── */
+.flying-card-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flying-card {
+  animation: cardFlyIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes cardFlyIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-120px) scale(0.5) rotate(-15deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(10px) scale(1.1) rotate(3deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+/* ── ターン開始通知 ──────────────────────── */
+.turn-announce-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
+  cursor: pointer;
+}
+
+.turn-announce-overlay.fading {
+  animation: fadeOut 0.5s ease forwards;
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.turn-announce-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2.5rem 4rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg), 0 0 60px rgba(233, 69, 96, 0.15);
+  backdrop-filter: blur(20px);
+  animation: turnPopIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes turnPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.turn-announce-emoji {
+  font-size: 3.5rem;
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.3));
+}
+
+.turn-announce-text {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: 0.05em;
+}
+
+.turn-announce-text.my-turn {
+  background: linear-gradient(135deg, var(--success), #69f0ae);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.4));
+}
+
+/* ── 隠しモード発動フラッシュ演出 ──────────────── */
+.secret-flash-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 204, 0, 0.3);
+  animation: secretFlash 3s ease forwards;
+  pointer-events: none;
+}
+
+@keyframes secretFlash {
+  0% { background: rgba(255, 204, 0, 0.6); }
+  30% { background: rgba(255, 204, 0, 0.1); }
+  100% { background: transparent; opacity: 0; }
+}
+
+.secret-flash-text {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: #ffcc00;
+  text-shadow: 0 0 20px rgba(255, 204, 0, 0.8), 0 0 40px rgba(255, 204, 0, 0.4);
+  animation: turnPopIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ══════════════════════════════════════════════
+   モバイルレスポンシブ対応 (max-width: 768px)
+   ══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── ロビー画面 ── */
+  .lobby-screen {
+    padding: 1rem;
+  }
+
+  .title-logo-img {
+    max-width: 85%;
+    max-height: 25vh;
+  }
+
+  .subtitle {
+    font-size: 0.9rem !important;
+  }
+
+  .lobby-card {
+    padding: 1rem;
+    width: 95%;
+  }
+
+  .lobby-btn {
+    font-size: 0.95rem;
+    padding: 10px 16px;
+  }
+
+  .input-label {
+    font-size: 0.8rem;
+  }
+
+  .player-count-selector {
+    gap: 0.3rem;
+  }
+
+  .player-count-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  .mode-selector .player-count-btn {
+    padding: 6px 8px;
+    font-size: 0.75rem;
+  }
+
+  /* ── 接続ステータス ── */
+  .connection-status {
+    font-size: 0.7rem;
+    padding: 4px 10px;
+  }
+
+  /* ── ゲームボード ── */
+  .game-board {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+
+  .game-header {
+    padding: 0.4rem 0.6rem;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .game-header .turn-info {
+    font-size: 0.75rem;
+  }
+
+  .game-header .current-player {
+    font-size: 0.9rem;
+  }
+
+  /* ── 対戦相手エリア ── */
+  .opponents-area {
+    gap: 0.4rem;
+  }
+
+  .opponent-panel {
+    min-width: 100px;
+    max-width: 180px;
+    padding: 0.4rem;
+  }
+
+  .opponent-name {
+    font-size: 0.75rem;
+  }
+
+  .opponent-hand-count {
+    font-size: 0.65rem;
+  }
+
+  .mini-card {
+    width: 24px;
+    height: 32px;
+    font-size: 0.8rem;
+  }
+
+  /* ── 中央エリア ── */
+  .center-area {
+    gap: 0.8rem;
+    min-height: 120px;
+  }
+
+  .declaration-text {
+    font-size: 1rem;
+  }
+
+  .action-buttons {
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .action-buttons .btn {
+    font-size: 0.85rem;
+    padding: 8px 14px;
+  }
+
+  /* ── カード ── */
+  .card {
+    width: 60px;
+    height: 84px;
+  }
+
+  .card-emoji {
+    font-size: 1.8rem;
+  }
+
+  .card-name {
+    font-size: 0.45rem;
+  }
+
+  .card-large {
+    width: 80px;
+    height: 112px;
+  }
+
+  .card-large .card-emoji {
+    font-size: 2.4rem;
+  }
+
+  .card-large .card-name {
+    font-size: 0.6rem;
+  }
+
+  /* ── 手札エリア ── */
+  .hand-area {
+    padding: 0.6rem;
+  }
+
+  .hand-label {
+    font-size: 0.75rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .hand-cards {
+    gap: 4px;
+  }
+
+  /* ── 宣言モーダル ── */
+  .modal {
+    padding: 1.2rem;
+    width: 95%;
+  }
+
+  .modal h2 {
+    font-size: 1.1rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .creature-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.4rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .creature-btn {
+    padding: 8px 4px;
+    gap: 3px;
+  }
+
+  .creature-btn .emoji {
+    font-size: 1.2rem;
+  }
+
+  .creature-btn .name {
+    font-size: 0.65rem;
+  }
+
+  /* ── 結果表示/切り替え画面 ── */
+  .switching-screen {
+    padding: 1.5rem;
+  }
+
+  .switching-screen h2 {
+    font-size: 1.4rem;
+  }
+
+  /* ── ゲームオーバー画面 ── */
+  .gameover-screen h1 {
+    font-size: 2rem;
+  }
+
+  .gameover-screen .winner-name {
+    font-size: 1.4rem;
+  }
+
+  /* ── チャットボックス ── */
+  .chat-box {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .chat-toggle {
+    right: 0.5rem;
+    bottom: 0.5rem;
+    width: 44px;
+    height: 44px;
+    font-size: 1.2rem;
+  }
+
+  .chat-container {
+    width: calc(100vw - 1rem);
+    right: 0.5rem;
+    bottom: 3.5rem;
+    max-height: 50vh;
+  }
+
+  /* ── イベントエリア ── */
+  .event-effects {
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .effect-badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+  }
+
+  /* ── ターン通知 ── */
+  .turn-announce-card {
+    padding: 1.5rem 2rem;
+  }
+
+  .turn-announce-emoji {
+    font-size: 2.5rem;
+  }
+
+  .turn-announce-text {
+    font-size: 1.4rem;
+  }
+
+  /* ── SPバー ── */
+  .sp-bar-container {
+    height: 6px;
+  }
+
+  /* ── フラッシュ演出 ── */
+  .secret-flash-text {
+    font-size: 1.8rem;
+  }
+
+  /* ── トースト通知 ── */
+  .toast-container {
+    top: 0.5rem;
+    right: 0.5rem;
+    left: 0.5rem;
+    max-width: 100%;
+  }
+
+  .toast {
+    font-size: 0.8rem;
+    padding: 8px 12px;
+  }
+
+  /* ── スキルボタン ── */
+  .skill-buttons {
+    gap: 0.3rem;
+  }
+
+  .skill-btn {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+  }
+
+  /* ── リプレイモーダル ── */
+  .replay-modal {
+    width: 95%;
+    max-height: 85vh;
+  }
+
+  /* ── 待機画面のプレイヤーリスト ── */
+  .waiting-player-list {
+    gap: 0.3rem;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   スモールモバイル対応 (max-width: 480px)
+   ══════════════════════════════════════════════ */
+@media (max-width: 480px) {
+
+  /* ── ロビー画面 ── */
+  .title-logo-img {
+    max-width: 90%;
+    max-height: 20vh;
+  }
+
+  .lobby-card {
+    width: 100%;
+  }
+
+  /* ── 対戦相手エリア ── */
+  .opponents-area {
+    gap: 0.3rem;
+  }
+
+  .opponent-panel {
+    min-width: 80px;
+    max-width: 150px;
+    padding: 0.3rem;
+  }
+
+  .opponent-name {
+    font-size: 0.65rem;
+  }
+
+  .opponent-hand-count {
+    font-size: 0.6rem;
+  }
+
+  .mini-card {
+    width: 20px;
+    height: 28px;
+    font-size: 0.7rem;
+  }
+
+  /* ── カード（さらに縮小） ── */
+  .card {
+    width: 50px;
+    height: 70px;
+  }
+
+  .card-emoji {
+    font-size: 1.4rem;
+  }
+
+  .card-name {
+    font-size: 0.4rem;
+  }
+
+  .card-large {
+    width: 70px;
+    height: 98px;
+  }
+
+  .card-large .card-emoji {
+    font-size: 2rem;
+  }
+
+  /* ── 宣言グリッド 3列化 ── */
+  .creature-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* ── ゲームヘッダー ── */
+  .game-header {
+    padding: 0.3rem 0.5rem;
+  }
+
+  .game-header .current-player {
+    font-size: 0.8rem;
+  }
+
+  .game-header .turn-info {
+    font-size: 0.65rem;
+  }
+
+  /* ── 中央エリア ── */
+  .center-area {
+    gap: 0.5rem;
+    min-height: 80px;
+  }
+
+  .declaration-text {
+    font-size: 0.85rem;
+  }
+
+  .action-buttons .btn {
+    font-size: 0.75rem;
+    padding: 6px 10px;
+  }
+
+  /* ── ターン通知 ── */
+  .turn-announce-card {
+    padding: 1rem 1.5rem;
+  }
+
+  .turn-announce-emoji {
+    font-size: 2rem;
+  }
+
+  .turn-announce-text {
+    font-size: 1.1rem;
+  }
+
+  /* ── フラッシュ演出 ── */
+  .secret-flash-text {
+    font-size: 1.4rem;
+  }
+
+  /* ── ゲームオーバー ── */
+  .gameover-screen h1 {
+    font-size: 1.6rem;
+  }
+
+  .gameover-screen .winner-name {
+    font-size: 1.1rem;
+  }
+}
+
+/* ── タッチデバイス向け調整 ── */
+@media (hover: none) and (pointer: coarse) {
+  .card:hover:not(.card-disabled) {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .creature-btn:hover {
+    border-color: var(--border);
+    background: transparent;
+  }
+
+  .btn:hover {
+    transform: none;
+  }
+}
+
+/* ── 設定画面 ─────────────────────── */
+.settings-gear-btn {
+  position: fixed;
+  bottom: 72px;
+  right: 12px;
+  z-index: 200;
+  background: rgba(22, 27, 52, 0.7);
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s;
+  box-shadow: var(--shadow);
+}
+
+.settings-gear-btn:hover {
+  background: rgba(22, 27, 52, 0.9);
+  transform: rotate(45deg) scale(1.1);
+  border-color: var(--accent);
+}
+
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.settings-modal {
+  background: var(--bg-surface);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  width: 90%;
+  max-width: 440px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.3s ease;
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.2rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-header h2 {
+  font-size: 1.3rem;
+  margin: 0;
+}
+
+.settings-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+
+.settings-close-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.settings-body {
+  padding: 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.settings-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.settings-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.settings-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  max-width: 220px;
+}
+
+.settings-slider {
+  flex: 1;
+  accent-color: var(--accent);
+  height: 6px;
+}
+
+.settings-value {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  min-width: 36px;
+  text-align: right;
+}
+
+.settings-range-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.settings-toggle {
+  padding: 6px 20px;
+  border-radius: 20px;
+  border: 2px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-main);
+}
+
+.settings-toggle.on {
+  background: rgba(52, 211, 153, 0.2);
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.settings-toggle.off {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.settings-toggle-group {
+  display: flex;
+  gap: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.settings-toggle-btn {
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-main);
+}
+
+.settings-toggle-btn + .settings-toggle-btn {
+  border-left: 1px solid var(--border);
+}
+
+.settings-toggle-btn.active {
+  background: rgba(233, 69, 96, 0.2);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.settings-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* ── 退室ボタン ─────────────────────── */
+.btn-danger-outline {
+  padding: 12px 24px;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--danger);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-main);
+  transition: all 0.2s;
+}
+.btn-danger-outline:hover {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: white;
+}
+
+.btn-sm {
+  padding: 8px 16px;
+  font-size: 0.85rem;
+}
+
+.leave-confirm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* ── プレイログパネル ─────────────────────── */
+.play-log-panel {
+  position: fixed;
+  left: 8px;
+  top: 60px;
+  bottom: 8px;
+  width: 240px;
+  background: rgba(15, 15, 26, 0.85);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  backdrop-filter: blur(12px);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.play-log-header {
+  padding: 0.6rem 0.8rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.play-log-timeline {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+  scroll-behavior: smooth;
+}
+
+.play-log-timeline::-webkit-scrollbar {
+  width: 4px;
+}
+.play-log-timeline::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+}
+
+.play-log-turn-group {
+  margin-bottom: 0.5rem;
+}
+
+.play-log-turn-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent);
+  padding: 2px 6px;
+  background: rgba(233, 69, 96, 0.1);
+  border-radius: 4px;
+  margin-bottom: 3px;
+  display: inline-block;
+}
+
+.play-log-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 2px 0;
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+.play-log-emoji {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+}
+
+.play-log-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.play-log-player {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.play-log-detail {
+  color: var(--text-secondary);
+  word-break: break-word;
+}
+
+.play-log-action-result .play-log-detail {
+  color: var(--warning);
+}
+
+.play-log-action-eliminate .play-log-detail {
+  color: var(--danger);
+}
+
+.play-log-action-event .play-log-detail {
+  color: var(--accent);
+}
+
+/* ── チャレンジ宣言演出 ─────────────────────── */
+.challenge-declaration-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  animation: fadeIn 0.3s ease;
+}
+
+.challenge-declaration-text {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--warning);
+  text-shadow:
+    0 0 20px rgba(251, 191, 36, 0.5),
+    0 2px 10px rgba(0, 0, 0, 0.8);
+  text-align: center;
+  animation: challengeSlideIn 0.5s ease;
+}
+
+@keyframes challengeSlideIn {
+  0% {
+    transform: scale(0.5) translateY(20px);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.1) translateY(-5px);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ── モバイル対応: プレイログパネル非表示 ─────── */
+@media (max-width: 768px) {
+  .play-log-panel {
+    display: none;
+  }
+}
