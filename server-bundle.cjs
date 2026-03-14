@@ -54495,16 +54495,15 @@ function triggerEvent(room) {
   switch (eventType) {
     case "SHUFFLE": {
       const activePlayers = state.players.filter((p) => !p.isEliminated);
+      const handCounts = activePlayers.map((p) => p.hand.length);
       const allCards = [];
       for (const p of activePlayers) allCards.push(...p.hand);
       const shuffled = shuffleDeck(allCards);
-      const perPlayer = Math.floor(shuffled.length / activePlayers.length);
       let idx = 0;
-      for (const p of activePlayers) {
-        p.hand = shuffled.slice(idx, idx + perPlayer);
-        idx += perPlayer;
+      for (let i = 0; i < activePlayers.length; i++) {
+        activePlayers[i].hand = shuffled.slice(idx, idx + handCounts[i]);
+        idx += handCounts[i];
       }
-      if (idx < shuffled.length) activePlayers[0].hand.push(...shuffled.slice(idx));
       break;
     }
     case "LEAK": {
@@ -54673,25 +54672,26 @@ function calculateTitles(room) {
     "\u300C\u78BA\u8A8D\u3057\u3066\u56DE\u3059\u300D\u56DE\u6570\u6700\u591A"
   );
   {
-    let maxCount = 0;
-    let maxId = null;
-    let maxCreature = "";
-    let tied = false;
-    for (const [playerId, stats] of allStats) {
-      const maxDecl = Object.entries(stats.declarationCounts).sort((a, b) => b[1] - a[1])[0];
-      if (maxDecl && maxDecl[1] >= 3) {
-        if (maxDecl[1] > maxCount) {
-          maxCount = maxDecl[1];
-          maxId = playerId;
-          maxCreature = maxDecl[0];
-          tied = false;
-        } else if (maxDecl[1] === maxCount) {
-          tied = true;
+    for (const creatureType of CREATURE_TYPES) {
+      const info = CREATURE_INFO[creatureType];
+      let maxCount = 0;
+      let maxId = null;
+      let tied = false;
+      for (const [playerId, stats] of allStats) {
+        const count = stats.declarationCounts[creatureType] || 0;
+        if (count >= 3) {
+          if (count > maxCount) {
+            maxCount = count;
+            maxId = playerId;
+            tied = false;
+          } else if (count === maxCount) {
+            tied = true;
+          }
         }
       }
-    }
-    if (maxId && !tied) {
-      result[maxId].push({ emoji: "\u{1FAB3}", name: `${maxCreature}\u597D\u304D`, description: `${maxCreature}\u3092${maxCount}\u56DE\u5BA3\u8A00` });
+      if (maxId && !tied) {
+        result[maxId].push({ emoji: info.emoji, name: `${info.name}\u597D\u304D`, description: `${info.name}\u3092${maxCount}\u56DE\u5BA3\u8A00` });
+      }
     }
   }
   if (room.gameState?.winner) {
@@ -54766,14 +54766,20 @@ function getMaxSameTypeCount(player) {
   }
   return Math.max(0, ...Object.values(counts).map((v) => v || 0));
 }
-function checkGameOver(players) {
+function checkGameOver(players, survivalMode) {
   const alive = players.filter((p) => !p.isEliminated);
-  if (alive.length < players.length) {
-    const sorted = [...alive].sort((a, b) => {
-      if (a.tableCards.length !== b.tableCards.length) return a.tableCards.length - b.tableCards.length;
-      return getMaxSameTypeCount(a) - getMaxSameTypeCount(b);
-    });
-    return sorted[0];
+  if (survivalMode) {
+    if (alive.length <= 1) {
+      return alive[0] ?? null;
+    }
+  } else {
+    if (alive.length < players.length) {
+      const sorted = [...alive].sort((a, b) => {
+        if (a.tableCards.length !== b.tableCards.length) return a.tableCards.length - b.tableCards.length;
+        return getMaxSameTypeCount(a) - getMaxSameTypeCount(b);
+      });
+      return sorted[0];
+    }
   }
   if (alive.every((p) => p.hand.length === 0)) {
     const sorted = [...alive].sort((a, b) => {
@@ -54795,7 +54801,7 @@ function getTargetPlayers(state) {
   const currentPlayerId = state.players[state.currentPlayerIndex].playerId;
   return state.players.filter((p) => !p.isEliminated && p.playerId !== currentPlayerId);
 }
-function filterStateForPlayer(state, playerId) {
+function filterStateForPlayer(state, playerId, room) {
   const players = state.players.map((p) => {
     const isMe = p.playerId === playerId;
     return {
@@ -54835,6 +54841,7 @@ function filterStateForPlayer(state, playerId) {
       sp: state.winner.sp
     };
   }
+  const titles = state.phase === "GAME_OVER" ? calculateTitles(room) : null;
   return {
     phase: state.phase,
     players,
@@ -54844,20 +54851,21 @@ function filterStateForPlayer(state, playerId) {
     eliminatedPlayers: state.eliminatedPlayers,
     winner: winnerView,
     myPlayerId: playerId,
-    gameMode: "normal",
-    turnDeadline: null,
-    titles: null,
-    activeEvent: null,
-    barrierActive: false,
-    doubleRiskActive: false,
-    lockedDeclareType: null,
-    rouletteTarget: null,
-    attackActiveBy: null,
-    shieldActive: false,
-    changePending: false,
-    salvationPending: null,
+    gameMode: room.gameMode,
+    turnDeadline: room.turnDeadline,
+    titles,
+    activeEvent: room.activeEvent,
+    barrierActive: room.barrierActive,
+    doubleRiskActive: room.doubleRiskActive,
+    lockedDeclareType: room.lockedDeclareType,
+    rouletteTarget: room.rouletteTarget,
+    attackActiveBy: room.attackActiveBy,
+    shieldActive: room.shieldActive,
+    changePending: room.changePending,
+    salvationPending: room.salvationPending,
     revealResult: state.revealResult,
-    replayLog: null
+    replayLog: room.replayLog,
+    bgmStartIndex: room.bgmStartIndex
   };
 }
 var app = (0, import_express.default)();
@@ -54902,49 +54910,68 @@ function broadcastRoomUpdate(room) {
     status: room.status,
     gameMode: room.gameMode,
     eventInterval: room.eventInterval,
-    secretMode: room.secretMode
+    secretMode: room.secretMode,
+    survivalMode: room.survivalMode
   };
   io2.to(room.roomId).emit("room_update", info);
 }
 function broadcastGameState(room) {
   if (!room.gameState) return;
-  const titles = room.gameState.phase === "GAME_OVER" ? calculateTitles(room) : null;
   for (const [socketId, member] of room.members) {
-    const view = filterStateForPlayer(room.gameState, member.playerId);
-    view.turnDeadline = room.turnDeadline;
-    view.gameMode = room.gameMode;
-    view.titles = titles;
-    view.activeEvent = room.activeEvent;
-    view.barrierActive = room.barrierActive;
-    view.doubleRiskActive = room.doubleRiskActive;
-    view.lockedDeclareType = room.lockedDeclareType;
-    view.rouletteTarget = room.rouletteTarget;
-    view.attackActiveBy = room.attackActiveBy;
-    view.shieldActive = room.shieldActive;
-    view.changePending = room.changePending;
-    view.salvationPending = room.salvationPending;
-    view.replayLog = room.replayLog;
+    const view = filterStateForPlayer(room.gameState, member.playerId, room);
     io2.to(socketId).emit("game_state_update", view);
   }
   if (room.spectators.size > 0) {
-    const spectatorView = filterStateForPlayer(room.gameState, "__spectator__");
-    spectatorView.turnDeadline = room.turnDeadline;
-    spectatorView.gameMode = room.gameMode;
-    spectatorView.titles = titles;
-    spectatorView.activeEvent = room.activeEvent;
-    spectatorView.barrierActive = room.barrierActive;
-    spectatorView.doubleRiskActive = room.doubleRiskActive;
-    spectatorView.lockedDeclareType = room.lockedDeclareType;
-    spectatorView.rouletteTarget = room.rouletteTarget;
-    spectatorView.attackActiveBy = room.attackActiveBy;
-    spectatorView.shieldActive = room.shieldActive;
-    spectatorView.changePending = room.changePending;
-    spectatorView.salvationPending = room.salvationPending;
-    spectatorView.replayLog = room.replayLog;
+    const spectatorView = filterStateForPlayer(room.gameState, "__spectator__", room);
     for (const spectatorSocketId of room.spectators) {
       io2.to(spectatorSocketId).emit("game_state_update", spectatorView);
     }
   }
+}
+function restartGame(room) {
+  clearTurnTimer(room);
+  room.rematchAccepted.clear();
+  room.playerStats.clear();
+  room.replayLog = [];
+  clearEventEffects(room);
+  room.attackActiveBy = null;
+  room.shieldActive = false;
+  room.changePending = false;
+  const deck = shuffleDeck(createDeck());
+  const memberList = Array.from(room.members.values());
+  const { hands } = dealCards(deck, memberList.length);
+  const players = memberList.map((m, i) => ({
+    playerId: m.playerId,
+    displayName: m.displayName,
+    hand: hands[i],
+    tableCards: [],
+    isEliminated: false,
+    seatIndex: i,
+    sp: 0
+  }));
+  for (const p of players) {
+    room.playerStats.set(p.playerId, createEmptyStats());
+  }
+  const startIndex = Math.floor(Math.random() * players.length);
+  room.gameState = {
+    phase: "ACTIVE_PLAYER_TURN",
+    players,
+    currentPlayerIndex: startIndex,
+    passingCard: null,
+    turnCount: 1,
+    eliminatedPlayers: [],
+    winner: null,
+    revealResult: null
+  };
+  room.status = "IN_GAME";
+  room.bgmStartIndex = Math.floor(Math.random() * 3);
+  const playerNames = players.map((p) => p.displayName).join(", ");
+  addReplayLog(room, "GAME_START", "", playerNames + " \u3067\u30B2\u30FC\u30E0\u958B\u59CB\uFF01", "\u{1F3AE}");
+  io2.to(room.roomId).emit("rematch_start");
+  broadcastRoomUpdate(room);
+  startTurnTimer(room);
+  broadcastGameState(room);
+  console.log(`[\u518D\u6226\u958B\u59CB] ${room.roomId}`);
 }
 function clearTurnTimer(room) {
   if (room.turnTimer) {
@@ -54990,6 +55017,29 @@ function handleTimeout(room) {
       const receiverIndex = state.players.findIndex((p) => p.playerId === randomTarget.playerId);
       state.currentPlayerIndex = receiverIndex;
       state.phase = "WAITING_RECEIVER_ACTION";
+      if (current.hand.length === 0) {
+        current.isEliminated = true;
+        state.eliminatedPlayers.push(current.playerId);
+        io2.to(room.roomId).emit("player_eliminated", {
+          playerId: current.playerId,
+          playerName: current.displayName,
+          creatureType: randomCreature
+        });
+        addReplayLog(room, "ELIMINATE", current.displayName, "\u624B\u672D\u304C0\u679A\u306B\u306A\u308A\u8131\u843D\uFF01", "\u{1F480}");
+        const winner = checkGameOver(state.players, room.survivalMode);
+        if (winner) {
+          state.winner = winner;
+          state.phase = "GAME_OVER";
+          state.passingCard = null;
+          state.revealResult = null;
+          room.status = "FINISHED";
+          clearTurnTimer(room);
+          addReplayLog(room, "GAME_OVER", winner.displayName, winner.displayName + " \u306E\u52DD\u5229\uFF01", "\u{1F3C6}");
+          io2.to(room.roomId).emit("game_over", { winnerName: winner.displayName, winnerId: winner.playerId });
+          broadcastGameState(room);
+          return;
+        }
+      }
       break;
     }
     case "WAITING_RECEIVER_ACTION": {
@@ -55033,7 +55083,7 @@ function handleTimeout(room) {
           creatureType: eliminationType
         });
       }
-      const winner = checkGameOver(state.players);
+      const winner = checkGameOver(state.players, room.survivalMode);
       if (winner) {
         state.winner = winner;
         state.phase = "GAME_OVER";
@@ -55092,7 +55142,9 @@ io2.on("connection", (socket) => {
       replayLog: [],
       gameState: null,
       secretMode: data.secretMode ?? false,
-      turnTimeoutMs: data.turnTimeout ? data.turnTimeout * 1e3 : DEFAULT_TURN_TIMEOUT_MS
+      turnTimeoutMs: data.turnTimeout ? data.turnTimeout * 1e3 : DEFAULT_TURN_TIMEOUT_MS,
+      survivalMode: data.survivalMode ?? false,
+      bgmStartIndex: 0
     };
     rooms.set(roomId, room);
     socketToRoom.set(socket.id, roomId);
@@ -55163,6 +55215,7 @@ io2.on("connection", (socket) => {
       sp: 0
     }));
     const startIndex = Math.floor(Math.random() * players.length);
+    room.bgmStartIndex = Math.floor(Math.random() * 3);
     room.gameState = {
       phase: "ACTIVE_PLAYER_TURN",
       players,
@@ -55225,6 +55278,31 @@ io2.on("connection", (socket) => {
     if (senderStats) {
       senderStats.declarationCounts[data.declaredType] = (senderStats.declarationCounts[data.declaredType] || 0) + 1;
     }
+    if (currentPlayer.hand.length === 0) {
+      currentPlayer.isEliminated = true;
+      state.eliminatedPlayers.push(currentPlayer.playerId);
+      io2.to(room.roomId).emit("player_eliminated", {
+        playerId: currentPlayer.playerId,
+        playerName: currentPlayer.displayName,
+        creatureType: data.declaredType
+        // 最後に宣言した生き物を表示用に使う
+      });
+      addReplayLog(room, "ELIMINATE", currentPlayer.displayName, "\u624B\u672D\u304C0\u679A\u306B\u306A\u308A\u8131\u843D\uFF01", "\u{1F480}");
+      const winner = checkGameOver(state.players, room.survivalMode);
+      if (winner) {
+        state.winner = winner;
+        state.phase = "GAME_OVER";
+        state.passingCard = null;
+        state.revealResult = null;
+        room.status = "FINISHED";
+        clearTurnTimer(room);
+        addReplayLog(room, "GAME_OVER", winner.displayName, winner.displayName + " \u306E\u52DD\u5229\uFF01", "\u{1F3C6}");
+        io2.to(room.roomId).emit("game_over", { winnerName: winner.displayName, winnerId: winner.playerId });
+        callback({ ok: true });
+        broadcastGameState(room);
+        return;
+      }
+    }
     callback({ ok: true });
     startTurnTimer(room);
     broadcastGameState(room);
@@ -55282,7 +55360,7 @@ io2.on("connection", (socket) => {
     }
     if (senderStats) {
       if (wasHonest) {
-        if (challengerCorrect) senderStats.truthSuccess++;
+        if (!challengerCorrect) senderStats.truthSuccess++;
       } else {
         if (challengerCorrect) senderStats.bluffFail++;
         else senderStats.bluffSuccess++;
@@ -55370,13 +55448,10 @@ io2.on("connection", (socket) => {
       }
     }
     if (room.attackActiveBy && state.revealResult?.challengerCorrect) {
-      const activePlayers = state.players.filter((p) => !p.isEliminated);
-      const minCards = Math.min(...activePlayers.map((p) => p.tableCards.length));
-      const minPlayers = activePlayers.filter((p) => p.tableCards.length === minCards && p.playerId !== room.attackActiveBy);
-      if (minPlayers.length > 0 && loser.tableCards.length > 0) {
-        const movedCard = loser.tableCards.pop();
-        const target = minPlayers[Math.floor(Math.random() * minPlayers.length)];
-        target.tableCards.push(movedCard);
+      const attacker = state.players.find((p) => p.playerId === room.attackActiveBy);
+      if (attacker && attacker.tableCards.length > 0) {
+        const movedCard = attacker.tableCards.pop();
+        loser.tableCards.push(movedCard);
       }
     }
     const eliminationType = checkElimination(loser);
@@ -55391,7 +55466,7 @@ io2.on("connection", (socket) => {
       const elimInfo = CREATURE_INFO[eliminationType];
       addReplayLog(room, "ELIMINATE", loser.displayName, elimInfo.emoji + " " + elimInfo.name + " \u304C4\u679A\u3067\u8131\u843D\uFF01", "\u{1F480}");
     }
-    const winner = checkGameOver(state.players);
+    const winner = checkGameOver(state.players, room.survivalMode);
     if (winner) {
       state.winner = winner;
       state.phase = "GAME_OVER";
@@ -55430,98 +55505,36 @@ io2.on("connection", (socket) => {
     broadcastGameState(room);
   });
   socket.on("rematch", (callback) => {
-    const { room, playerId, error } = getPlayerContext(socket.id);
-    if (error || !room || !playerId) {
+    let targetRoom;
+    let targetPlayerId;
+    let targetMember;
+    const ctx = getPlayerContext(socket.id);
+    if (ctx.room && ctx.playerId) {
+      targetRoom = ctx.room;
+      targetPlayerId = ctx.playerId;
+      targetMember = targetRoom.members.get(socket.id);
+    } else {
       const roomId = socketToRoom.get(socket.id);
       if (!roomId) return callback({ ok: false, error: "\u30EB\u30FC\u30E0\u306B\u53C2\u52A0\u3057\u3066\u3044\u307E\u305B\u3093" });
-      const r = rooms.get(roomId);
-      if (!r) return callback({ ok: false, error: "\u30EB\u30FC\u30E0\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093" });
-      const member2 = r.members.get(socket.id);
-      if (!member2) return callback({ ok: false, error: "\u30D7\u30EC\u30A4\u30E4\u30FC\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093" });
-      r.rematchAccepted.add(member2.playerId);
-      const totalPlayers2 = r.members.size;
-      io2.to(r.roomId).emit("rematch_requested", {
-        requestedBy: member2.displayName,
-        acceptedCount: r.rematchAccepted.size,
-        totalCount: totalPlayers2
-      });
-      callback({ ok: true });
-      if (r.rematchAccepted.size >= totalPlayers2) {
-        clearTurnTimer(r);
-        r.rematchAccepted.clear();
-        const deck = shuffleDeck(createDeck());
-        const memberList = Array.from(r.members.values());
-        const { hands } = dealCards(deck, memberList.length);
-        const players = memberList.map((m, i) => ({
-          playerId: m.playerId,
-          displayName: m.displayName,
-          hand: hands[i],
-          tableCards: [],
-          isEliminated: false,
-          seatIndex: i,
-          sp: 0
-        }));
-        const startIndex = Math.floor(Math.random() * players.length);
-        r.gameState = {
-          phase: "ACTIVE_PLAYER_TURN",
-          players,
-          currentPlayerIndex: startIndex,
-          passingCard: null,
-          turnCount: 1,
-          eliminatedPlayers: [],
-          winner: null,
-          revealResult: null
-        };
-        r.status = "IN_GAME";
-        io2.to(r.roomId).emit("rematch_start");
-        broadcastRoomUpdate(r);
-        startTurnTimer(r);
-        broadcastGameState(r);
-        console.log(`[\u518D\u6226\u958B\u59CB] ${r.roomId}`);
-      }
-      return;
+      targetRoom = rooms.get(roomId);
+      if (!targetRoom) return callback({ ok: false, error: "\u30EB\u30FC\u30E0\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093" });
+      targetMember = targetRoom.members.get(socket.id);
+      if (!targetMember) return callback({ ok: false, error: "\u30D7\u30EC\u30A4\u30E4\u30FC\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093" });
+      targetPlayerId = targetMember.playerId;
     }
-    room.rematchAccepted.add(playerId);
-    const totalPlayers = room.members.size;
-    const member = room.members.get(socket.id);
-    io2.to(room.roomId).emit("rematch_requested", {
-      requestedBy: member.displayName,
-      acceptedCount: room.rematchAccepted.size,
+    if (!targetRoom || !targetPlayerId || !targetMember) {
+      return callback({ ok: false, error: "\u4E0D\u660E\u306A\u30A8\u30E9\u30FC" });
+    }
+    targetRoom.rematchAccepted.add(targetPlayerId);
+    const totalPlayers = targetRoom.members.size;
+    io2.to(targetRoom.roomId).emit("rematch_requested", {
+      requestedBy: targetMember.displayName,
+      acceptedCount: targetRoom.rematchAccepted.size,
       totalCount: totalPlayers
     });
     callback({ ok: true });
-    if (room.rematchAccepted.size >= totalPlayers) {
-      clearTurnTimer(room);
-      room.rematchAccepted.clear();
-      const deck = shuffleDeck(createDeck());
-      const memberList = Array.from(room.members.values());
-      const { hands } = dealCards(deck, memberList.length);
-      const players = memberList.map((m, i) => ({
-        playerId: m.playerId,
-        displayName: m.displayName,
-        hand: hands[i],
-        tableCards: [],
-        isEliminated: false,
-        seatIndex: i,
-        sp: 0
-      }));
-      const startIndex = Math.floor(Math.random() * players.length);
-      room.gameState = {
-        phase: "ACTIVE_PLAYER_TURN",
-        players,
-        currentPlayerIndex: startIndex,
-        passingCard: null,
-        turnCount: 1,
-        eliminatedPlayers: [],
-        winner: null,
-        revealResult: null
-      };
-      room.status = "IN_GAME";
-      io2.to(room.roomId).emit("rematch_start");
-      broadcastRoomUpdate(room);
-      startTurnTimer(room);
-      broadcastGameState(room);
-      console.log(`[\u518D\u6226\u958B\u59CB] ${room.roomId}`);
+    if (targetRoom.rematchAccepted.size >= totalPlayers) {
+      restartGame(targetRoom);
     }
   });
   socket.on("send_chat", (data, callback) => {
@@ -55550,8 +55563,7 @@ io2.on("connection", (socket) => {
     io2.to(room.roomId).emit("spectator_update", { spectatorCount: room.spectators.size });
     broadcastRoomUpdate(room);
     if (room.gameState) {
-      const view = filterStateForPlayer(room.gameState, "__spectator__");
-      view.turnDeadline = room.turnDeadline;
+      const view = filterStateForPlayer(room.gameState, "__spectator__", room);
       io2.to(socket.id).emit("game_state_update", view);
     }
     callback({ ok: true });
@@ -55655,6 +55667,7 @@ io2.on("connection", (socket) => {
   socket.on("leave_room", () => {
     const roomId = socketToRoom.get(socket.id);
     if (roomId) {
+      socket.leave(roomId);
       const room = rooms.get(roomId);
       if (room) {
         const member = room.members.get(socket.id);
@@ -55856,7 +55869,7 @@ httpServer.listen(PORT, "0.0.0.0", () => {
   const localIp = getLocalIp();
   console.log("");
   console.log("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
-  console.log("  \u{1FAB3} \u306F\u3063\u305F\u308A\u30DD\u30FC\u30AB\u30FC v1.0.2");
+  console.log("  \u{1FAB3} \u306F\u3063\u305F\u308A\u30DD\u30FC\u30AB\u30FC v1.0.0");
   console.log("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550");
   console.log("");
   console.log(`  \u25B6 \u30ED\u30FC\u30AB\u30EB:  http://localhost:${PORT}`);

@@ -11,7 +11,7 @@ interface LobbyScreenProps {
   myPlayerId: string | null;
   connected: boolean;
   error: string | null;
-  onCreateRoom: (playerName: string, maxPlayers?: number, gameMode?: string, eventInterval?: number | string, secretMode?: boolean, turnTimeout?: number) => Promise<string>;
+  onCreateRoom: (playerName: string, maxPlayers?: number, gameMode?: string, eventInterval?: number | string, secretMode?: boolean, turnTimeout?: number, survivalMode?: boolean) => Promise<string>;
   onJoinRoom: (roomId: string, playerName: string) => Promise<void>;
   onStartGame: () => Promise<void>;
   onJoinAsSpectator: (roomId: string) => Promise<void>;
@@ -28,10 +28,12 @@ export function LobbyScreen({
   const [gameMode, setGameMode] = useState<GameMode>('normal');
   const [eventInterval, setEventInterval] = useState<EventInterval>(3);
   const [turnTimeout, setTurnTimeout] = useState(180);
+  const [survivalMode, setSurvivalMode] = useState(false);
   const [mode, setMode] = useState<'menu' | 'create' | 'join'>('menu');
   const [loading, setLoading] = useState(false);
   const { isSecretMode, activateSecretMode } = useSecretMode();
   const [showSecretFlash, setShowSecretFlash] = useState(false);
+  const [showVersionModal, setShowVersionModal] = useState(false);
   const keySequenceRef = useRef<string[]>([]);
   const KONAMI_CODE = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight'];
 
@@ -102,6 +104,7 @@ export function LobbyScreen({
           <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
             🎮 モード: {room.gameMode === 'normal' ? 'ノーマル' : room.gameMode === 'event' ? 'イベント' : 'スキル'}
             {room.gameMode === 'event' && ` / 間隔: ${room.eventInterval === 'random' ? 'ランダム' : `${room.eventInterval}ターンごと`}`}
+            {room.survivalMode && ' / 🏆 サバイバル'}
           </p>
 
           <h2>参加プレイヤー ({room.players.length}/{room.maxPlayers})</h2>
@@ -178,6 +181,25 @@ export function LobbyScreen({
 
         {error && <p className="error-text">❌ {error}</p>}
 
+        <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1.2rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <a
+            href="https://forms.gle/VLznVmnQQQaB2TwD7"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-outline"
+            style={{ fontSize: '0.9rem', padding: '8px 20px' }}
+          >
+            📝 バグ報告・ご要望
+          </a>
+          <button
+            className="btn btn-outline"
+            onClick={() => setShowVersionModal(true)}
+            style={{ fontSize: '0.9rem', padding: '8px 20px' }}
+          >
+            📋 v1.0.0
+          </button>
+        </div>
+
         {isSecretMode && (
           <p style={{ color: '#ffcc00', fontSize: '0.8rem', marginTop: '0.5rem', textShadow: '0 0 8px rgba(255,204,0,0.5)' }}>
             🐾 ??? モード ON
@@ -187,6 +209,24 @@ export function LobbyScreen({
         {showSecretFlash && (
           <div className="secret-flash-overlay">
             <div className="secret-flash-text">🐾 たぬきモード 解放！</div>
+          </div>
+        )}
+
+        {showVersionModal && (
+          <div className="settings-overlay" onClick={() => setShowVersionModal(false)}>
+            <div className="settings-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+              <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>📋 バージョン情報</h2>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ borderLeft: '3px solid var(--accent)', paddingLeft: '0.8rem', marginBottom: '0.5rem' }}>
+                  <p style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>v1.0.0</p>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>2025.3.15</p>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.3rem' }}>🎉 正式版リリース</p>
+                </div>
+              </div>
+              <button className="btn btn-outline" onClick={() => setShowVersionModal(false)} style={{ marginTop: '1rem' }}>
+                閉じる
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -240,6 +280,11 @@ export function LobbyScreen({
               </button>
             ))}
           </div>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '-1rem', marginBottom: '1rem' }}>
+            {gameMode === 'normal' && '通常ルール。ブラフと心理戦のみで勝負！'}
+            {gameMode === 'event' && 'ターンごとにランダムイベントが発生。波乱の展開！'}
+            {gameMode === 'skill' && 'SP（スキルポイント）を貯めてスキル発動。戦略性UP！'}
+          </p>
 
           {gameMode === 'event' && (
             <>
@@ -273,6 +318,21 @@ export function LobbyScreen({
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>300s</span>
           </div>
 
+          {maxPlayers >= 3 && (
+            <div
+              style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', cursor: 'pointer' }}
+              onClick={() => setSurvivalMode(!survivalMode)}
+            >
+              <div
+                className={`settings-toggle ${survivalMode ? 'on' : 'off'}`}
+                style={{ width: 44, height: 24, borderRadius: 12, position: 'relative', background: survivalMode ? 'var(--accent)' : 'rgba(255,255,255,0.15)', transition: 'background 0.2s' }}
+              >
+                <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3, left: survivalMode ? 23 : 3, transition: 'left 0.2s' }} />
+              </div>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>🏆 サバイバルモード（最後の1人まで続行）</span>
+            </div>
+          )}
+
           <div className="lobby-actions">
             <button
               className="btn btn-primary"
@@ -280,7 +340,7 @@ export function LobbyScreen({
               onClick={async () => {
                 setLoading(true);
                 try {
-                  await onCreateRoom(playerName.trim(), maxPlayers, gameMode, eventInterval, isSecretMode || undefined, turnTimeout);
+                  await onCreateRoom(playerName.trim(), maxPlayers, gameMode, eventInterval, isSecretMode || undefined, turnTimeout, survivalMode || undefined);
                 } catch { /* error handled by hook */ }
                 finally { setLoading(false); }
               }}

@@ -18,9 +18,10 @@ interface ChatBoxProps {
   messages: ChatMessage[];
   onSend: (message: string) => void;
   myPlayerId: string | null;
+  isSpectator?: boolean;
 }
 
-export function ChatBox({ messages, onSend, myPlayerId }: ChatBoxProps) {
+export function ChatBox({ messages, onSend, myPlayerId, isSpectator }: ChatBoxProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [unreadCount, setUnreadCount] = useState(0);
@@ -107,54 +108,62 @@ export function ChatBox({ messages, onSend, myPlayerId }: ChatBoxProps) {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* クイックメッセージバー */}
-          <div className="quick-msg-bar">
-            {QUICK_MESSAGES.map(msg => (
-              <button
-                key={msg}
-                className="quick-msg-btn"
-                onClick={() => handleQuickSend(msg)}
-              >
-                {msg}
-              </button>
-            ))}
-          </div>
+          {isSpectator ? (
+            <p style={{ padding: '0.5rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+              👁️ 観戦中のためチャットできません
+            </p>
+          ) : (
+            <>
+              {/* クイックメッセージバー */}
+              <div className="quick-msg-bar">
+                {QUICK_MESSAGES.map(msg => (
+                  <button
+                    key={msg}
+                    className="quick-msg-btn"
+                    onClick={() => handleQuickSend(msg)}
+                  >
+                    {msg}
+                  </button>
+                ))}
+              </div>
 
-          {/* スタンプパネル */}
-          {showStamps && (
-            <div className="stamp-panel">
-              {STAMPS.map(stamp => (
+              {/* スタンプパネル */}
+              {showStamps && (
+                <div className="stamp-panel">
+                  {STAMPS.map(stamp => (
+                    <button
+                      key={stamp}
+                      className="stamp-btn"
+                      onClick={() => handleStampSend(stamp)}
+                    >
+                      {stamp}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <div className="chat-input-area">
                 <button
-                  key={stamp}
-                  className="stamp-btn"
-                  onClick={() => handleStampSend(stamp)}
+                  className={`stamp-toggle ${showStamps ? 'active' : ''}`}
+                  onClick={() => setShowStamps(!showStamps)}
+                  title="スタンプ"
                 >
-                  {stamp}
+                  😀
                 </button>
-              ))}
-            </div>
+                <input
+                  className="chat-input"
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="メッセージを入力..."
+                  maxLength={50}
+                />
+                <button className="chat-send-btn" onClick={handleSend} disabled={!input.trim()}>
+                  送信
+                </button>
+              </div>
+            </>
           )}
-
-          <div className="chat-input-area">
-            <button
-              className={`stamp-toggle ${showStamps ? 'active' : ''}`}
-              onClick={() => setShowStamps(!showStamps)}
-              title="スタンプ"
-            >
-              😀
-            </button>
-            <input
-              className="chat-input"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="メッセージを入力..."
-              maxLength={50}
-            />
-            <button className="chat-send-btn" onClick={handleSend} disabled={!input.trim()}>
-              送信
-            </button>
-          </div>
         </div>
       )}
     </div>

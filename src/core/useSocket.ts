@@ -32,7 +32,7 @@ interface UseSocketReturn {
   /** 最新エラー */
   error: string | null;
   /** ルーム作成 */
-  createRoom: (playerName: string, maxPlayers?: number, gameMode?: string, eventInterval?: number | string, secretMode?: boolean) => Promise<string>;
+  createRoom: (playerName: string, maxPlayers?: number, gameMode?: string, eventInterval?: number | string, secretMode?: boolean, turnTimeout?: number, survivalMode?: boolean) => Promise<string>;
   /** ルーム参加 */
   joinRoom: (roomId: string, playerName: string) => Promise<void>;
   /** ゲーム開始（ホストのみ） */
@@ -168,7 +168,7 @@ export function useSocket(
     return socketRef.current;
   }, []);
 
-  const createRoom = useCallback(async (playerName: string, maxPlayers?: number, gameMode?: string, eventInterval?: number | string, secretMode?: boolean, turnTimeout?: number): Promise<string> => {
+  const createRoom = useCallback(async (playerName: string, maxPlayers?: number, gameMode?: string, eventInterval?: number | string, secretMode?: boolean, turnTimeout?: number, survivalMode?: boolean): Promise<string> => {
     const socket = getSocket();
     return new Promise((resolve, reject) => {
       socket.emit('create_room', {
@@ -178,6 +178,7 @@ export function useSocket(
         eventInterval: eventInterval as (1 | 2 | 3 | 4 | 5 | 'random') || 3,
         secretMode,
         turnTimeout,
+        survivalMode,
       }, (res) => {
         if (res.ok && res.roomId && res.playerId) {
           setMyPlayerId(res.playerId);

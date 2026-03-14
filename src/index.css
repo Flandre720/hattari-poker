@@ -111,6 +111,7 @@ body {
   background-position: center;
   background-repeat: no-repeat;
   position: relative;
+  font-size: var(--base-font-size);
 }
 
 .game-board::before {
@@ -238,6 +239,7 @@ body {
 
 .player-count-btn {
   flex: 1;
+  min-width: 56px;
   padding: 12px;
   border: 2px solid var(--border);
   border-radius: var(--radius-sm);
@@ -247,6 +249,7 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .player-count-btn.active {
@@ -1369,12 +1372,13 @@ body {
 /* ── チャットボックス ──────────────────────── */
 .chat-box {
   position: fixed;
-  bottom: 2.5rem;
+  top: 108px;
   right: 0.5rem;
   z-index: 200;
   display: flex;
   flex-direction: column;
   width: 280px;
+  font-size: var(--base-font-size);
 }
 
 .chat-toggle {
@@ -2724,15 +2728,15 @@ body {
 /* ── 設定画面 ─────────────────────── */
 .settings-gear-btn {
   position: fixed;
-  bottom: 72px;
+  top: 56px;
   right: 12px;
   z-index: 200;
   background: rgba(22, 27, 52, 0.7);
   border: 1px solid var(--glass-border);
   border-radius: 50%;
-  width: 48px;
-  height: 48px;
-  font-size: 1.5rem;
+  width: 44px;
+  height: 44px;
+  font-size: 1.3rem;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -2945,21 +2949,80 @@ body {
 }
 
 /* ── プレイログパネル ─────────────────────── */
-.play-log-panel {
+/* ── プレイログ引き出しUI ─────────────────────── */
+.play-log-wrapper {
   position: fixed;
-  left: 8px;
+  left: 0;
   top: 60px;
   bottom: 8px;
-  width: 240px;
-  background: rgba(15, 15, 26, 0.85);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-sm);
-  backdrop-filter: blur(12px);
   z-index: 50;
+  display: flex;
+  align-items: stretch;
+  pointer-events: none;
+}
+
+.play-log-tab {
+  pointer-events: auto;
+  width: 32px;
+  background: rgba(15, 15, 26, 0.75);
+  border: 1px solid var(--glass-border);
+  border-left: none;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
+  align-self: flex-start;
+  height: 48px;
+  margin-top: 8px;
+  backdrop-filter: blur(8px);
+}
+
+.play-log-tab:hover {
+  background: rgba(233, 69, 96, 0.3);
+  color: var(--text-primary);
+}
+
+.play-log-tab.active {
+  background: rgba(233, 69, 96, 0.4);
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+.play-log-panel {
+  pointer-events: auto;
+  width: 240px;
+  max-width: 240px;
+  background: rgba(15, 15, 26, 0.9);
+  border: 1px solid var(--glass-border);
+  border-left: none;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  backdrop-filter: blur(12px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   box-shadow: var(--shadow);
+  /* デフォルト: 非表示（幅0） */
+  max-width: 0;
+  opacity: 0;
+  transition: max-width 0.25s ease, opacity 0.2s ease;
+}
+
+/* ホバーで一時表示 */
+.play-log-wrapper:hover .play-log-panel {
+  max-width: 240px;
+  opacity: 1;
+}
+
+/* 固定表示 */
+.play-log-wrapper.pinned .play-log-panel {
+  max-width: 240px;
+  opacity: 1;
 }
 
 .play-log-header {
@@ -2969,6 +3032,7 @@ body {
   border-bottom: 1px solid var(--border);
   color: var(--text-primary);
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .play-log-timeline {
@@ -2999,6 +3063,7 @@ body {
   border-radius: 4px;
   margin-bottom: 3px;
   display: inline-block;
+  white-space: nowrap;
 }
 
 .play-log-entry {
@@ -3080,9 +3145,9 @@ body {
   }
 }
 
-/* ── モバイル対応: プレイログパネル非表示 ─────── */
+/* ── モバイル対応: プレイログ非表示 ─────── */
 @media (max-width: 768px) {
-  .play-log-panel {
+  .play-log-wrapper {
     display: none;
   }
 }

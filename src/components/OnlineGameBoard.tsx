@@ -65,30 +65,76 @@ export function OnlineGameBoard({
   const [cardFlying, setCardFlying] = useState(false);
   const [showTurnAnnounce, setShowTurnAnnounce] = useState(false);
   const [turnAnnounceFading, setTurnAnnounceFading] = useState(false);
+  const [playLogPinned, setPlayLogPinned] = useState(false);
   const { settings } = useSettings();
   const { play: playSound } = useSoundEffects(settings.seVolume / 100);
   const prevTurnRef = useRef<string | null>(null);
   const { isSecretMode } = useSecretMode();
   const creatureInfo = useCreatureInfo();
   const bgmRef = useRef<HTMLAudioElement | null>(null);
+  const bgmIndexRef = useRef<number>(0);
 
-  // 隠しモードBGMループ再生 + BGM音量反映
+  const BGM_TRACKS = ['/bgm1.mp3', '/bgm2.mp3', '/bgm3.mp3'];
+
+  // BGM再生管理
   useEffect(() => {
+    // たぬきモード: poro.mp3のみ
     if (isSecretMode) {
+      // 通常BGMが鳴っていたら停止
+      if (bgmRef.current && !bgmRef.current.src.includes('poro.mp3')) {
+        bgmRef.current.pause();
+        bgmRef.current = null;
+      }
       if (!bgmRef.current) {
         bgmRef.current = new Audio('/images/poro.mp3');
         bgmRef.current.loop = true;
+        bgmRef.current.volume = settings.bgmVolume / 200;
+        bgmRef.current.play().catch(() => { /* autoplay blocked */ });
+      } else {
+        bgmRef.current.volume = settings.bgmVolume / 200;
       }
-      bgmRef.current.volume = settings.bgmVolume / 100;
-      bgmRef.current.play().catch(() => { /* autoplay blocked */ });
+      return () => {
+        if (bgmRef.current) {
+          bgmRef.current.pause();
+          bgmRef.current = null;
+        }
+      };
     }
+
+    // 通常BGM: 3曲ローテーション
+    const playBgm = (index: number) => {
+      const track = BGM_TRACKS[index % BGM_TRACKS.length];
+      const audio = new Audio(track);
+      audio.volume = settings.bgmVolume / 200;
+      audio.onended = () => {
+        bgmIndexRef.current = (bgmIndexRef.current + 1) % BGM_TRACKS.length;
+        playBgm(bgmIndexRef.current);
+      };
+      bgmRef.current = audio;
+      audio.play().catch(() => { /* autoplay blocked */ });
+    };
+
+    if (!bgmRef.current) {
+      // 初回再生: サーバーが指定した開始インデックスから
+      bgmIndexRef.current = gameState.bgmStartIndex ?? 0;
+      playBgm(bgmIndexRef.current);
+    }
+
     return () => {
       if (bgmRef.current) {
         bgmRef.current.pause();
-        bgmRef.current.currentTime = 0;
+        bgmRef.current = null;
       }
     };
-  }, [isSecretMode, settings.bgmVolume]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSecretMode]);
+
+  // BGM音量変更時: 曲をリスタートせずvolume更新のみ
+  useEffect(() => {
+    if (bgmRef.current) {
+      bgmRef.current.volume = settings.bgmVolume / 200;
+    }
+  }, [settings.bgmVolume]);
 
   const myPlayerId = gameState.myPlayerId;
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
@@ -119,8 +165,8 @@ export function OnlineGameBoard({
       // ターン通知演出
       setShowTurnAnnounce(true);
       setTurnAnnounceFading(false);
-      const fadeTimer = setTimeout(() => setTurnAnnounceFading(true), 2000);
-      const hideTimer = setTimeout(() => setShowTurnAnnounce(false), 2500);
+      const fadeTimer = setTimeout(() => setTurnAnnounceFading(true), 1200);
+      const hideTimer = setTimeout(() => setShowTurnAnnounce(false), 1700);
       return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer); };
     }
     prevTurnRef.current = turnKey;
@@ -149,9 +195,17 @@ export function OnlineGameBoard({
       // 1.5秒後に宣言を消してフリップ開始
       const declTimer = setTimeout(() => setShowChallengeDeclaration(false), 1500);
       const flipTimer = setTimeout(() => setFlipped(true), 2300);
+      // フリップ完了後にSE再生
+      const seTimer = setTimeout(() => {
+        if (gameState.revealResult?.challengerCorrect) {
+          playSound('correct');
+        } else {
+          playSound('wrong');
+        }
+      }, 2500);
       const resultTimer = setTimeout(() => setShowResult(true), 3100);
       prevPhaseRef.current = gameState.phase;
-      return () => { clearTimeout(declTimer); clearTimeout(flipTimer); clearTimeout(resultTimer); };
+      return () => { clearTimeout(declTimer); clearTimeout(flipTimer); clearTimeout(seTimer); clearTimeout(resultTimer); };
     }
     // WAITING_RECEIVER_ACTION: カード移動アニメ
     if (gameState.phase === 'WAITING_RECEIVER_ACTION' && prevPhaseRef.current !== 'WAITING_RECEIVER_ACTION') {
@@ -195,7 +249,7 @@ export function OnlineGameBoard({
                 <div className="card card-back card-large">❓</div>
               </div>
               <div className="flip-card-front">
-                <CardComponent card={card} large />
+                {flipped && <CardComponent card={card} large />}
               </div>
             </div>
           </div>
@@ -218,8 +272,8 @@ export function OnlineGameBoard({
             <p>
               <strong>{loser.displayName}</strong> がカードを引き取ります
             </p>
-            {/* OKボタンはチャレンジしたプレイヤー（カードの受け手）のみに表示 */}
-            {(gameState.passingCard?.toPlayerId === myPlayerId || isSpectator) ? (
+            {/* OKボタンは全プレイヤーに表示（観戦者含む） */}
+            {showResult && (
               <button
                 className="btn btn-primary"
                 onClick={() => confirmResult()}
@@ -227,10 +281,6 @@ export function OnlineGameBoard({
               >
                 OK
               </button>
-            ) : (
-              <p style={{ color: 'var(--text-secondary)', marginTop: '1rem', fontSize: '0.9rem' }}>
-                {gameState.players.find(p => p.playerId === gameState.passingCard?.toPlayerId)?.displayName} が確認中...
-              </p>
             )}
           </div>
         </div>
@@ -299,29 +349,38 @@ export function OnlineGameBoard({
 
   return (
     <div className={`game-board ${isSpectator ? 'spectator-mode' : ''}`}>
-      {/* プレイログパネル */}
+      {/* プレイログパネル（引き出し式） */}
       {replayLog.length > 0 && (
-        <div className="play-log-panel">
-          <div className="play-log-header">📜 プレイログ</div>
-          <div className="play-log-timeline" ref={playLogRef}>
-            {logGroups.map((group, gi) => (
-              <div key={gi} className="play-log-turn-group">
-                <div className="play-log-turn-label">
-                  {group.turn === 0 ? '🎮 開始' : `Turn ${group.turn}`}
-                </div>
-                {group.entries.map((entry, ei) => (
-                  <div key={ei} className={`play-log-entry play-log-action-${entry.action.toLowerCase()}`}>
-                    <span className="play-log-emoji">{entry.emoji}</span>
-                    <div className="play-log-content">
-                      {entry.playerName && (
-                        <span className="play-log-player">{entry.playerName}</span>
-                      )}
-                      <span className="play-log-detail">{entry.detail}</span>
-                    </div>
+        <div className={`play-log-wrapper ${playLogPinned ? 'pinned' : ''}`}>
+          <button
+            className={`play-log-tab ${playLogPinned ? 'active' : ''}`}
+            onClick={() => setPlayLogPinned(prev => !prev)}
+            title={playLogPinned ? 'プレイログを閉じる' : 'プレイログを固定表示'}
+          >
+            📜
+          </button>
+          <div className="play-log-panel">
+            <div className="play-log-header">プレイログ</div>
+            <div className="play-log-timeline">
+              {logGroups.map((group, gi) => (
+                <div key={gi} className="play-log-turn-group">
+                  <div className="play-log-turn-label">
+                    {group.turn === 0 ? '🎮 開始' : `Turn ${group.turn}`}
                   </div>
-                ))}
-              </div>
-            ))}
+                  {group.entries.map((entry, ei) => (
+                    <div key={ei} className={`play-log-entry play-log-action-${entry.action.toLowerCase()}`}>
+                      <span className="play-log-emoji">{entry.emoji}</span>
+                      <div className="play-log-content">
+                        {entry.playerName && (
+                          <span className="play-log-player">{entry.playerName}</span>
+                        )}
+                        <span className="play-log-detail">{entry.detail}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -523,11 +582,11 @@ export function OnlineGameBoard({
             </p>
             {isMyTurn ? (
               <div className="action-buttons">
-                <button className="btn btn-danger" onClick={() => { playSound('challenge'); challenge(true); }}>
-                  ❌ 嘘だと思う
-                </button>
                 <button className="btn btn-success" onClick={() => { playSound('challenge'); challenge(false); }}>
                   ✅ 本当だと思う
+                </button>
+                <button className="btn btn-danger" onClick={() => { playSound('challenge'); challenge(true); }}>
+                  ❌ 嘘だと思う
                 </button>
                 {canPeekAndPass && (
                   <button className="btn btn-warning" onClick={() => peekCard()}>

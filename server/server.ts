@@ -33,7 +33,7 @@ interface Room {
   /** ターンタイマー */
   turnTimer: ReturnType<typeof setTimeout> | null;
   turnDeadline: number | null;
-  /** 再戦受諎inのplayerIdSet */
+  /** 再戦受諾のplayerIdSet */
   rematchAccepted: Set<string>;
   /** 観戦者のSocket ID Set */
   spectators: Set<string>;
@@ -68,6 +68,10 @@ interface Room {
   secretMode: boolean;
   /** ターンタイムアウト（ミリ秒） */
   turnTimeoutMs: number;
+  /** サバイバルモード: 最後の1人まで続行（3人以上用） */
+  survivalMode: boolean;
+  /** BGM開始インデックス（0-2）全員同期用 */
+  bgmStartIndex: number;
 }
 
 const rooms = new Map<string, Room>();
@@ -147,19 +151,17 @@ function triggerEvent(room: Room): ActiveEvent | null {
   // イベント効果の即時適用
   switch (eventType) {
     case 'SHUFFLE': {
-      // 全手札をまとめて再配布
+      // 全手札をまとめて再配布（各プレイヤーの元の枚数を維持）
       const activePlayers = state.players.filter(p => !p.isEliminated);
+      const handCounts = activePlayers.map(p => p.hand.length);
       const allCards: Card[] = [];
       for (const p of activePlayers) allCards.push(...p.hand);
       const shuffled = shuffleDeck(allCards);
-      const perPlayer = Math.floor(shuffled.length / activePlayers.length);
       let idx = 0;
-      for (const p of activePlayers) {
-        p.hand = shuffled.slice(idx, idx + perPlayer);
-        idx += perPlayer;
+      for (let i = 0; i < activePlayers.length; i++) {
+        activePlayers[i].hand = shuffled.slice(idx, idx + handCounts[i]);
+        idx += handCounts[i];
       }
-      // 余りを最初のプレイヤーに
-      if (idx < shuffled.length) activePlayers[0].hand.push(...shuffled.slice(idx));
       break;
     }
     case 'LEAK': {
@@ -339,26 +341,27 @@ function calculateTitles(room: Room): Record<string, Title[]> {
 
   // 🪳 〇〇好き: 特定の生物を最も多く宣言
   {
-    let maxCount = 0;
-    let maxId: string | null = null;
-    let maxCreature = '';
-    let tied = false;
-    for (const [playerId, stats] of allStats) {
-      const maxDecl = Object.entries(stats.declarationCounts)
-        .sort((a, b) => b[1] - a[1])[0];
-      if (maxDecl && maxDecl[1] >= 3) {
-        if (maxDecl[1] > maxCount) {
-          maxCount = maxDecl[1];
-          maxId = playerId;
-          maxCreature = maxDecl[0];
-          tied = false;
-        } else if (maxDecl[1] === maxCount) {
-          tied = true;
+    // 各生き物ごとに、最も多く宣言した1人に称号を付与（同率は付与しない）
+    for (const creatureType of CREATURE_TYPES) {
+      const info = CREATURE_INFO[creatureType];
+      let maxCount = 0;
+      let maxId: string | null = null;
+      let tied = false;
+      for (const [playerId, stats] of allStats) {
+        const count = stats.declarationCounts[creatureType] || 0;
+        if (count >= 3) {
+          if (count > maxCount) {
+            maxCount = count;
+            maxId = playerId;
+            tied = false;
+          } else if (count === maxCount) {
+            tied = true;
+          }
         }
       }
-    }
-    if (maxId && !tied) {
-      result[maxId].push({ emoji: '🪳', name: `${maxCreature}好き`, description: `${maxCreature}を${maxCount}回宣言` });
+      if (maxId && !tied) {
+        result[maxId].push({ emoji: info.emoji, name: `${info.name}好き`, description: `${info.name}を${maxCount}回宣言` });
+      }
     }
   }
 
@@ -445,16 +448,23 @@ function getMaxSameTypeCount(player: Player): number {
   return Math.max(0, ...Object.values(counts).map(v => v || 0));
 }
 
-function checkGameOver(players: Player[]): Player | null {
+function checkGameOver(players: Player[], survivalMode: boolean): Player | null {
   const alive = players.filter(p => !p.isEliminated);
-  // はったりポーカー: 1人が脱落した時点でゲーム終了
-  if (alive.length < players.length) {
-    // 勝者 = 生存者の中で場のカードが最も少ないプレイヤー
-    const sorted = [...alive].sort((a, b) => {
-      if (a.tableCards.length !== b.tableCards.length) return a.tableCards.length - b.tableCards.length;
-      return getMaxSameTypeCount(a) - getMaxSameTypeCount(b);
-    });
-    return sorted[0];
+  if (survivalMode) {
+    // サバイバルモード: 最後の1人まで続行
+    if (alive.length <= 1) {
+      return alive[0] ?? null;
+    }
+  } else {
+    // 通常ルール: 最初の1人が脱落した時点でゲーム終了（正式ルール準拠）
+    if (alive.length < players.length) {
+      // 勝者 = 生存者の中で場のカードが最も少ないプレイヤー
+      const sorted = [...alive].sort((a, b) => {
+        if (a.tableCards.length !== b.tableCards.length) return a.tableCards.length - b.tableCards.length;
+        return getMaxSameTypeCount(a) - getMaxSameTypeCount(b);
+      });
+      return sorted[0];
+    }
   }
   // 全員の手札がなくなった場合もゲーム終了
   if (alive.every(p => p.hand.length === 0)) {
@@ -484,7 +494,7 @@ function getTargetPlayers(state: GameState): Player[] {
 }
 
 // ── 情報秘匿フィルタ ──────────────────────────
-function filterStateForPlayer(state: GameState, playerId: string): GameStateView {
+function filterStateForPlayer(state: GameState, playerId: string, room: Room): GameStateView {
   const players: PlayerView[] = state.players.map(p => {
     const isMe = p.playerId === playerId;
     return {
@@ -527,6 +537,8 @@ function filterStateForPlayer(state: GameState, playerId: string): GameStateView
     };
   }
 
+  const titles = state.phase === 'GAME_OVER' ? calculateTitles(room) : null;
+
   return {
     phase: state.phase,
     players,
@@ -536,20 +548,21 @@ function filterStateForPlayer(state: GameState, playerId: string): GameStateView
     eliminatedPlayers: state.eliminatedPlayers,
     winner: winnerView,
     myPlayerId: playerId,
-    gameMode: 'normal',
-    turnDeadline: null,
-    titles: null,
-    activeEvent: null,
-    barrierActive: false,
-    doubleRiskActive: false,
-    lockedDeclareType: null,
-    rouletteTarget: null,
-    attackActiveBy: null,
-    shieldActive: false,
-    changePending: false,
-    salvationPending: null,
+    gameMode: room.gameMode,
+    turnDeadline: room.turnDeadline,
+    titles,
+    activeEvent: room.activeEvent,
+    barrierActive: room.barrierActive,
+    doubleRiskActive: room.doubleRiskActive,
+    lockedDeclareType: room.lockedDeclareType,
+    rouletteTarget: room.rouletteTarget,
+    attackActiveBy: room.attackActiveBy,
+    shieldActive: room.shieldActive,
+    changePending: room.changePending,
+    salvationPending: room.salvationPending,
     revealResult: state.revealResult,
-    replayLog: null,
+    replayLog: room.replayLog,
+    bgmStartIndex: room.bgmStartIndex,
   };
 }
 
@@ -604,6 +617,7 @@ function broadcastRoomUpdate(room: Room) {
     gameMode: room.gameMode,
     eventInterval: room.eventInterval,
     secretMode: room.secretMode,
+    survivalMode: room.survivalMode,
   };
   io.to(room.roomId).emit('room_update', info);
 }
@@ -611,45 +625,75 @@ function broadcastRoomUpdate(room: Room) {
 // ── ゲーム状態をプレイヤー別に送信 ──────────────────────────
 function broadcastGameState(room: Room) {
   if (!room.gameState) return;
-  const titles = room.gameState.phase === 'GAME_OVER' ? calculateTitles(room) : null;
   for (const [socketId, member] of room.members) {
-    const view = filterStateForPlayer(room.gameState, member.playerId);
-    view.turnDeadline = room.turnDeadline;
-    view.gameMode = room.gameMode;
-    view.titles = titles;
-    view.activeEvent = room.activeEvent;
-    view.barrierActive = room.barrierActive;
-    view.doubleRiskActive = room.doubleRiskActive;
-    view.lockedDeclareType = room.lockedDeclareType;
-    view.rouletteTarget = room.rouletteTarget;
-    view.attackActiveBy = room.attackActiveBy;
-    view.shieldActive = room.shieldActive;
-    view.changePending = room.changePending;
-    view.salvationPending = room.salvationPending;
-    // リプレイログを常時送信（プレイログ表示用）
-    view.replayLog = room.replayLog;
+    const view = filterStateForPlayer(room.gameState, member.playerId, room);
     io.to(socketId).emit('game_state_update', view);
   }
   // 観戦者向け
   if (room.spectators.size > 0) {
-    const spectatorView = filterStateForPlayer(room.gameState, '__spectator__');
-    spectatorView.turnDeadline = room.turnDeadline;
-    spectatorView.gameMode = room.gameMode;
-    spectatorView.titles = titles;
-    spectatorView.activeEvent = room.activeEvent;
-    spectatorView.barrierActive = room.barrierActive;
-    spectatorView.doubleRiskActive = room.doubleRiskActive;
-    spectatorView.lockedDeclareType = room.lockedDeclareType;
-    spectatorView.rouletteTarget = room.rouletteTarget;
-    spectatorView.attackActiveBy = room.attackActiveBy;
-    spectatorView.shieldActive = room.shieldActive;
-    spectatorView.changePending = room.changePending;
-    spectatorView.salvationPending = room.salvationPending;
-    spectatorView.replayLog = room.replayLog;
+    const spectatorView = filterStateForPlayer(room.gameState, '__spectator__', room);
     for (const spectatorSocketId of room.spectators) {
       io.to(spectatorSocketId).emit('game_state_update', spectatorView);
     }
   }
+}
+
+// ── 再戦ゲームリスタート ──────────────────────────
+function restartGame(room: Room) {
+  clearTurnTimer(room);
+  room.rematchAccepted.clear();
+
+  // 統計・ログ・イベント状態をリセット
+  room.playerStats.clear();
+  room.replayLog = [];
+  clearEventEffects(room);
+  room.attackActiveBy = null;
+  room.shieldActive = false;
+  room.changePending = false;
+
+  const deck = shuffleDeck(createDeck());
+  const memberList = Array.from(room.members.values());
+  const { hands } = dealCards(deck, memberList.length);
+
+  const players: Player[] = memberList.map((m, i) => ({
+    playerId: m.playerId,
+    displayName: m.displayName,
+    hand: hands[i],
+    tableCards: [],
+    isEliminated: false,
+    seatIndex: i,
+    sp: 0,
+  }));
+
+  // 統計データ初期化
+  for (const p of players) {
+    room.playerStats.set(p.playerId, createEmptyStats());
+  }
+
+  const startIndex = Math.floor(Math.random() * players.length);
+
+  room.gameState = {
+    phase: 'ACTIVE_PLAYER_TURN',
+    players,
+    currentPlayerIndex: startIndex,
+    passingCard: null,
+    turnCount: 1,
+    eliminatedPlayers: [],
+    winner: null,
+    revealResult: null,
+  };
+  room.status = 'IN_GAME';
+  room.bgmStartIndex = Math.floor(Math.random() * 3);
+
+  // リプレイログ: ゲーム開始
+  const playerNames = players.map(p => p.displayName).join(', ');
+  addReplayLog(room, 'GAME_START', '', playerNames + ' でゲーム開始！', '🎮');
+
+  io.to(room.roomId).emit('rematch_start');
+  broadcastRoomUpdate(room);
+  startTurnTimer(room);
+  broadcastGameState(room);
+  console.log(`[再戦開始] ${room.roomId}`);
 }
 
 // ── ターンタイマー管理 ──────────────────────────
@@ -707,6 +751,32 @@ function handleTimeout(room: Room) {
       const receiverIndex = state.players.findIndex(p => p.playerId === randomTarget.playerId);
       state.currentPlayerIndex = receiverIndex;
       state.phase = 'WAITING_RECEIVER_ACTION';
+
+      // 手札0枚で脱落チェック（タイムアウト時）
+      if (current.hand.length === 0) {
+        current.isEliminated = true;
+        state.eliminatedPlayers.push(current.playerId);
+        io.to(room.roomId).emit('player_eliminated', {
+          playerId: current.playerId,
+          playerName: current.displayName,
+          creatureType: randomCreature,
+        });
+        addReplayLog(room, 'ELIMINATE', current.displayName, '手札が0枚になり脱落！', '💀');
+
+        const winner = checkGameOver(state.players, room.survivalMode);
+        if (winner) {
+          state.winner = winner;
+          state.phase = 'GAME_OVER';
+          state.passingCard = null;
+          state.revealResult = null;
+          room.status = 'FINISHED';
+          clearTurnTimer(room);
+          addReplayLog(room, 'GAME_OVER', winner.displayName, winner.displayName + ' の勝利！', '🏆');
+          io.to(room.roomId).emit('game_over', { winnerName: winner.displayName, winnerId: winner.playerId });
+          broadcastGameState(room);
+          return;
+        }
+      }
       break;
     }
     case 'WAITING_RECEIVER_ACTION': {
@@ -753,7 +823,7 @@ function handleTimeout(room: Room) {
           creatureType: eliminationType,
         });
       }
-      const winner = checkGameOver(state.players);
+      const winner = checkGameOver(state.players, room.survivalMode);
       if (winner) {
         state.winner = winner;
         state.phase = 'GAME_OVER';
@@ -818,6 +888,8 @@ io.on('connection', (socket) => {
       gameState: null,
       secretMode: data.secretMode ?? false,
       turnTimeoutMs: data.turnTimeout ? data.turnTimeout * 1000 : DEFAULT_TURN_TIMEOUT_MS,
+      survivalMode: data.survivalMode ?? false,
+      bgmStartIndex: 0,
     };
     rooms.set(roomId, room);
     socketToRoom.set(socket.id, roomId);
@@ -906,6 +978,7 @@ io.on('connection', (socket) => {
     }));
 
     const startIndex = Math.floor(Math.random() * players.length);
+    room.bgmStartIndex = Math.floor(Math.random() * 3);
 
     room.gameState = {
       phase: 'ACTIVE_PLAYER_TURN',
@@ -992,6 +1065,33 @@ io.on('connection', (socket) => {
       senderStats.declarationCounts[data.declaredType] = (senderStats.declarationCounts[data.declaredType] || 0) + 1;
     }
 
+    // 手札0枚で脱落チェック
+    if (currentPlayer.hand.length === 0) {
+      currentPlayer.isEliminated = true;
+      state.eliminatedPlayers.push(currentPlayer.playerId);
+      io.to(room.roomId).emit('player_eliminated', {
+        playerId: currentPlayer.playerId,
+        playerName: currentPlayer.displayName,
+        creatureType: data.declaredType, // 最後に宣言した生き物を表示用に使う
+      });
+      addReplayLog(room, 'ELIMINATE', currentPlayer.displayName, '手札が0枚になり脱落！', '💀');
+
+      const winner = checkGameOver(state.players, room.survivalMode);
+      if (winner) {
+        state.winner = winner;
+        state.phase = 'GAME_OVER';
+        state.passingCard = null;
+        state.revealResult = null;
+        room.status = 'FINISHED';
+        clearTurnTimer(room);
+        addReplayLog(room, 'GAME_OVER', winner.displayName, winner.displayName + ' の勝利！', '🏆');
+        io.to(room.roomId).emit('game_over', { winnerName: winner.displayName, winnerId: winner.playerId });
+        callback({ ok: true });
+        broadcastGameState(room);
+        return;
+      }
+    }
+
     callback({ ok: true });
     startTurnTimer(room);
     broadcastGameState(room);
@@ -1071,8 +1171,8 @@ io.on('connection', (socket) => {
     }
     if (senderStats) {
       if (wasHonest) {
-        // 正直宣言
-        if (challengerCorrect) senderStats.truthSuccess++; // チャレンジされて相手が「本当」と当てた
+        // 正直宣言: 相手が「嘘」と判断して外れた → 送り手の誘い成功
+        if (!challengerCorrect) senderStats.truthSuccess++;
       } else {
         // 嘘の宣言
         if (challengerCorrect) senderStats.bluffFail++; // 嘘がバレた
@@ -1193,15 +1293,12 @@ io.on('connection', (socket) => {
       }
     }
 
-    // スキル: アタック効果 — チャレンジ成功時、カードを場カード最少プレイヤーに移す
+    // スキル: アタック効果 — チャレンジ成功時、自分の場カード1枚を相手(loser)に移す
     if (room.attackActiveBy && state.revealResult?.challengerCorrect) {
-      const activePlayers = state.players.filter(p => !p.isEliminated);
-      const minCards = Math.min(...activePlayers.map(p => p.tableCards.length));
-      const minPlayers = activePlayers.filter(p => p.tableCards.length === minCards && p.playerId !== room.attackActiveBy);
-      if (minPlayers.length > 0 && loser.tableCards.length > 0) {
-        const movedCard = loser.tableCards.pop()!;
-        const target = minPlayers[Math.floor(Math.random() * minPlayers.length)];
-        target.tableCards.push(movedCard);
+      const attacker = state.players.find(p => p.playerId === room.attackActiveBy);
+      if (attacker && attacker.tableCards.length > 0) {
+        const movedCard = attacker.tableCards.pop()!;
+        loser.tableCards.push(movedCard);
       }
     }
 
@@ -1222,7 +1319,7 @@ io.on('connection', (socket) => {
     }
 
     // 勝者チェック
-    const winner = checkGameOver(state.players);
+    const winner = checkGameOver(state.players, room.survivalMode);
     if (winner) {
       state.winner = winner;
       state.phase = 'GAME_OVER';
@@ -1275,119 +1372,44 @@ io.on('connection', (socket) => {
 
   // ── 再戦 ──
   socket.on('rematch', (callback) => {
-    const { room, playerId, error } = getPlayerContext(socket.id);
-    if (error || !room || !playerId) {
-      // ゲーム終了後はgetPlayerContextがエラーを返すので、直接ルーム検索
+    // ゲーム終了後はgetPlayerContextがエラーを返す場合があるので、直接ルーム検索
+    let targetRoom: Room | undefined;
+    let targetPlayerId: string | undefined;
+    let targetMember: { playerId: string; displayName: string } | undefined;
+
+    const ctx = getPlayerContext(socket.id);
+    if (ctx.room && ctx.playerId) {
+      targetRoom = ctx.room;
+      targetPlayerId = ctx.playerId;
+      targetMember = targetRoom.members.get(socket.id);
+    } else {
       const roomId = socketToRoom.get(socket.id);
       if (!roomId) return callback({ ok: false, error: 'ルームに参加していません' });
-      const r = rooms.get(roomId);
-      if (!r) return callback({ ok: false, error: 'ルームが見つかりません' });
-      const member = r.members.get(socket.id);
-      if (!member) return callback({ ok: false, error: 'プレイヤーが見つかりません' });
-
-      r.rematchAccepted.add(member.playerId);
-      const totalPlayers = r.members.size;
-
-      io.to(r.roomId).emit('rematch_requested', {
-        requestedBy: member.displayName,
-        acceptedCount: r.rematchAccepted.size,
-        totalCount: totalPlayers,
-      });
-
-      callback({ ok: true });
-
-      // 全員が受諾 → ゲームリスタート
-      if (r.rematchAccepted.size >= totalPlayers) {
-        clearTurnTimer(r);
-        r.rematchAccepted.clear();
-
-        const deck = shuffleDeck(createDeck());
-        const memberList = Array.from(r.members.values());
-        const { hands } = dealCards(deck, memberList.length);
-
-        const players: Player[] = memberList.map((m, i) => ({
-          playerId: m.playerId,
-          displayName: m.displayName,
-          hand: hands[i],
-          tableCards: [],
-          isEliminated: false,
-          seatIndex: i,
-          sp: 0,
-        }));
-
-        const startIndex = Math.floor(Math.random() * players.length);
-
-        r.gameState = {
-          phase: 'ACTIVE_PLAYER_TURN',
-          players,
-          currentPlayerIndex: startIndex,
-          passingCard: null,
-          turnCount: 1,
-          eliminatedPlayers: [],
-          winner: null,
-          revealResult: null,
-        };
-        r.status = 'IN_GAME';
-
-        io.to(r.roomId).emit('rematch_start');
-        broadcastRoomUpdate(r);
-        startTurnTimer(r);
-        broadcastGameState(r);
-        console.log(`[再戦開始] ${r.roomId}`);
-      }
-      return;
+      targetRoom = rooms.get(roomId);
+      if (!targetRoom) return callback({ ok: false, error: 'ルームが見つかりません' });
+      targetMember = targetRoom.members.get(socket.id);
+      if (!targetMember) return callback({ ok: false, error: 'プレイヤーが見つかりません' });
+      targetPlayerId = targetMember.playerId;
     }
 
-    // getPlayerContextが成功した場合（GAME_OVERでgameStateがある場合）
-    room.rematchAccepted.add(playerId);
-    const totalPlayers = room.members.size;
+    if (!targetRoom || !targetPlayerId || !targetMember) {
+      return callback({ ok: false, error: '不明なエラー' });
+    }
 
-    const member = room.members.get(socket.id)!;
-    io.to(room.roomId).emit('rematch_requested', {
-      requestedBy: member.displayName,
-      acceptedCount: room.rematchAccepted.size,
+    targetRoom.rematchAccepted.add(targetPlayerId);
+    const totalPlayers = targetRoom.members.size;
+
+    io.to(targetRoom.roomId).emit('rematch_requested', {
+      requestedBy: targetMember.displayName,
+      acceptedCount: targetRoom.rematchAccepted.size,
       totalCount: totalPlayers,
     });
 
     callback({ ok: true });
 
-    if (room.rematchAccepted.size >= totalPlayers) {
-      clearTurnTimer(room);
-      room.rematchAccepted.clear();
-
-      const deck = shuffleDeck(createDeck());
-      const memberList = Array.from(room.members.values());
-      const { hands } = dealCards(deck, memberList.length);
-
-      const players: Player[] = memberList.map((m, i) => ({
-        playerId: m.playerId,
-        displayName: m.displayName,
-        hand: hands[i],
-        tableCards: [],
-        isEliminated: false,
-        seatIndex: i,
-        sp: 0,
-      }));
-
-      const startIndex = Math.floor(Math.random() * players.length);
-
-      room.gameState = {
-        phase: 'ACTIVE_PLAYER_TURN',
-        players,
-        currentPlayerIndex: startIndex,
-        passingCard: null,
-        turnCount: 1,
-        eliminatedPlayers: [],
-        winner: null,
-        revealResult: null,
-      };
-      room.status = 'IN_GAME';
-
-      io.to(room.roomId).emit('rematch_start');
-      broadcastRoomUpdate(room);
-      startTurnTimer(room);
-      broadcastGameState(room);
-      console.log(`[再戦開始] ${room.roomId}`);
+    // 全員が受諾 → ゲームリスタート
+    if (targetRoom.rematchAccepted.size >= totalPlayers) {
+      restartGame(targetRoom);
     }
   });
 
@@ -1429,8 +1451,7 @@ io.on('connection', (socket) => {
 
     // ゲーム中なら状態を送信
     if (room.gameState) {
-      const view = filterStateForPlayer(room.gameState, '__spectator__');
-      view.turnDeadline = room.turnDeadline;
+      const view = filterStateForPlayer(room.gameState, '__spectator__', room);
       io.to(socket.id).emit('game_state_update', view);
     }
 
@@ -1566,6 +1587,9 @@ io.on('connection', (socket) => {
   socket.on('leave_room', () => {
     const roomId = socketToRoom.get(socket.id);
     if (roomId) {
+      // まずSocketIOルームから離脱（broadcastRoomUpdateが届かないようにする）
+      socket.leave(roomId);
+
       const room = rooms.get(roomId);
       if (room) {
         const member = room.members.get(socket.id);
@@ -1807,7 +1831,7 @@ httpServer.listen(PORT, '0.0.0.0', () => {
   const localIp = getLocalIp();
   console.log('');
   console.log('════════════════════════════════════════════');
-  console.log('  🪳 はったりポーカー v1.0.2');
+  console.log('  🪳 はったりポーカー v1.0.0');
   console.log('════════════════════════════════════════════');
   console.log('');
   console.log(`  ▶ ローカル:  http://localhost:${PORT}`);

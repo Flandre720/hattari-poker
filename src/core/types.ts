@@ -17,7 +17,7 @@ export const CREATURE_INFO: Record<CreatureType, { name: string; emoji: string; 
   TOAD:      { name: 'ヒキガエル', emoji: '🐸', color: '#5A8A3E' },
   SCORPION:  { name: 'サソリ',   emoji: '🦂', color: '#C4A000' },
   BAT:       { name: 'コウモリ', emoji: '🦇', color: '#3A3A6A' },
-  STINKBUG:  { name: 'カメムシ', emoji: '🐛', color: '#8B6914' },
+  STINKBUG:  { name: 'カメムシ', emoji: '🪲', color: '#8B6914' },
   SPIDER:    { name: 'クモ',     emoji: '🕷️', color: '#8B1A1A' },
 };
 

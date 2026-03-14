@@ -207,6 +207,8 @@ export interface GameStateView {
   } | null;
   /** リプレイログ（ゲーム終了時に含まれる） */
   replayLog: ReplayEntry[] | null;
+  /** BGM開始インデックス（0-2）全員同期用 */
+  bgmStartIndex: number;
 }
 
 // ── アクション（ローカル用） ──────────────────────────
@@ -229,13 +231,14 @@ export interface RoomInfo {
   gameMode: GameMode;
   eventInterval: EventInterval;
   secretMode?: boolean;
+  survivalMode?: boolean;
 }
 
 // ── Socket.IO イベント型定義 ──────────────────────────
 
 // クライアント → サーバー
 export interface ClientToServerEvents {
-  create_room: (data: { playerName: string; maxPlayers?: number; gameMode?: GameMode; eventInterval?: EventInterval; secretMode?: boolean; turnTimeout?: number }, callback: (res: { ok: boolean; roomId?: string; playerId?: string; error?: string }) => void) => void;
+  create_room: (data: { playerName: string; maxPlayers?: number; gameMode?: GameMode; eventInterval?: EventInterval; secretMode?: boolean; turnTimeout?: number; survivalMode?: boolean }, callback: (res: { ok: boolean; roomId?: string; playerId?: string; error?: string }) => void) => void;
   join_room: (data: { roomId: string; playerName: string }, callback: (res: { ok: boolean; playerId?: string; error?: string }) => void) => void;
   start_game: (callback: (res: { ok: boolean; error?: string }) => void) => void;
   select_card: (data: { cardId: string; targetPlayerId: string; declaredType: CreatureType }, callback: (res: { ok: boolean; error?: string }) => void) => void;

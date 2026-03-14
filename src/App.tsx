@@ -41,7 +41,7 @@ function AppInner() {
   const overlays = (
     <>
       <ToastContainer toasts={toasts} />
-      {room && <ChatBox messages={socket.chatMessages} onSend={socket.sendChat} myPlayerId={socket.myPlayerId} />}
+      {room && <ChatBox messages={socket.chatMessages} onSend={socket.sendChat} myPlayerId={socket.myPlayerId} isSpectator={socket.myPlayerId?.startsWith('__spectator__')} />}
       {connectionIndicator}
       <SettingsButton onLeaveRoom={room ? socket.leaveRoom : undefined} />
     </>

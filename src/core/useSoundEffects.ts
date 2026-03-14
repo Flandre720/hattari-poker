@@ -234,27 +234,47 @@ export function useSoundEffects(volumeMultiplier: number = 1) {
         break;
 
       case 'correct':
-        // 勝利風の明るい和音3連
-        playChord([523, 659], 0.15, 'sine', 0.1);
+        // 🎉 チャレンジ的中！華やかなファンファーレ
+        playChord([523, 659], 0.2, 'sine', 0.1);
+        playTone(523, 0.2, 'triangle', 0.06);
         setTimeout(() => {
-          playChord([659, 784], 0.15, 'sine', 0.1);
-        }, 120);
+          playChord([659, 784], 0.2, 'sine', 0.1);
+          playTone(659, 0.2, 'triangle', 0.06);
+        }, 130);
         setTimeout(() => {
-          playChord([784, 988, 1175], 0.35, 'sine', 0.08);
-          playChord([784, 988, 1175], 0.35, 'triangle', 0.04);
-          playNoise(0.08, 0.03);
-        }, 240);
+          playChord([784, 988, 1175], 0.3, 'sine', 0.1);
+          playTone(784, 0.3, 'triangle', 0.06);
+          playNoise(0.1, 0.04);
+        }, 260);
+        setTimeout(() => {
+          playChord([1047, 1319, 1568], 0.5, 'sine', 0.09);
+          playChord([523, 1047, 1568], 0.5, 'triangle', 0.05);
+        }, 420);
+        setTimeout(() => {
+          playChord([1568, 1976, 2093], 0.6, 'sine', 0.06);
+          playNoise(0.15, 0.05);
+        }, 600);
         break;
 
       case 'wrong':
-        // ドラマチックな下降和音 + ブザー
-        playChord([400, 470], 0.2, 'sawtooth', 0.06);
-        playChord([395, 465], 0.2, 'sawtooth', 0.03); // デチューンで不協和
+        // 💀 チャレンジ失敗！重厚な不協和音+下降ブザー
+        playChord([400, 475, 520], 0.25, 'sawtooth', 0.07);
+        playChord([398, 472, 518], 0.25, 'sawtooth', 0.04);
+        playNoise(0.12, 0.05);
         setTimeout(() => {
-          playChord([250, 300], 0.3, 'sawtooth', 0.05);
-          playChord([248, 298], 0.3, 'sawtooth', 0.03);
-          playTone(100, 0.4, 'square', 0.04);
-        }, 180);
+          playChord([300, 356, 400], 0.3, 'sawtooth', 0.06);
+          playChord([298, 354, 398], 0.3, 'sawtooth', 0.03);
+          playTone(150, 0.4, 'square', 0.05);
+        }, 200);
+        setTimeout(() => {
+          playChord([180, 212, 250], 0.4, 'sawtooth', 0.05);
+          playTone(80, 0.5, 'square', 0.04);
+          playTone(100, 0.5, 'sine', 0.06);
+        }, 400);
+        setTimeout(() => {
+          playChord([60, 80, 100], 0.6, 'sawtooth', 0.04);
+          playNoise(0.2, 0.04);
+        }, 600);
         break;
     }
   }, [playTone, playChord, playNoise]);
