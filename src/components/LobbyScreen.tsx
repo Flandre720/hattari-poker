@@ -196,7 +196,7 @@ export function LobbyScreen({
             onClick={() => setShowVersionModal(true)}
             style={{ fontSize: '0.9rem', padding: '8px 20px' }}
           >
-            📋 v1.0.0
+            📋 v1.0.1
           </button>
         </div>
 
@@ -217,9 +217,17 @@ export function LobbyScreen({
             <div className="settings-panel" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
               <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>📋 バージョン情報</h2>
               <div style={{ textAlign: 'left' }}>
-                <div style={{ borderLeft: '3px solid var(--accent)', paddingLeft: '0.8rem', marginBottom: '0.5rem' }}>
+                <div style={{ borderLeft: '3px solid var(--accent)', paddingLeft: '0.8rem', marginBottom: '1rem' }}>
+                  <p style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>v1.0.1</p>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>2026.3.16</p>
+                  <ul style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', marginTop: '0.3rem', paddingLeft: '1.2rem', lineHeight: 1.6 }}>
+                    <li>プレイログを引き出し式に変更（タブホバーで展開、クリックで固定表示）</li>
+                    <li>⚙️/💬ボタンを画面右上に移動（手札との重なりを解消）</li>
+                  </ul>
+                </div>
+                <div style={{ borderLeft: '3px solid var(--border)', paddingLeft: '0.8rem', marginBottom: '0.5rem' }}>
                   <p style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>v1.0.0</p>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>2025.3.15</p>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>2026.3.15</p>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.3rem' }}>🎉 正式版リリース</p>
                 </div>
               </div>
